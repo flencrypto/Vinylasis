@@ -212,3 +212,26 @@ export async function getDiscogsReleaseInfo(releaseId: number, config: DiscogsAp
 
   return await response.json()
 }
+
+export async function testDiscogsConnection(config: DiscogsApiConfig): Promise<{ success: boolean; message: string; count?: number }> {
+  try {
+    const listings = await searchDiscogsMarketplace(
+      {
+        query: 'vinyl',
+        per_page: 1,
+      },
+      config
+    )
+    
+    return {
+      success: true,
+      message: `Discogs API connected successfully. Found ${listings.length} test listing(s).`,
+      count: listings.length,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error connecting to Discogs API',
+    }
+  }
+}

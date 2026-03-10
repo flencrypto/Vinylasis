@@ -9,7 +9,9 @@ import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { MarketplaceConfig, getDefaultMarketplaceConfig, validateMarketplaceConfig } from '@/lib/marketplace-scanner'
-import { Info, CheckCircle, Warning } from '@phosphor-icons/react'
+import { testEbayConnection } from '@/lib/marketplace-ebay'
+import { testDiscogsConnection } from '@/lib/marketplace-discogs'
+import { Info, CheckCircle, Warning, Lightning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface MarketplaceSettingsDialogProps {
@@ -20,6 +22,8 @@ interface MarketplaceSettingsDialogProps {
 export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSettingsDialogProps) {
   const [config, setConfig] = useKV<MarketplaceConfig>('marketplace-config', getDefaultMarketplaceConfig())
   const [tempConfig, setTempConfig] = useState<MarketplaceConfig>(config || getDefaultMarketplaceConfig())
+  const [testingEbay, setTestingEbay] = useState(false)
+  const [testingDiscogs, setTestingDiscogs] = useState(false)
 
   const validation = validateMarketplaceConfig(tempConfig)
 
@@ -69,15 +73,67 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
     }))
   }
 
+  const handleTestEbay = async () => {
+    if (!tempConfig.ebay?.appId) {
+      toast.error('Please enter an eBay App ID first')
+      return
+    }
+
+    setTestingEbay(true)
+    const result = await testEbayConnection(tempConfig.ebay)
+    setTestingEbay(false)
+
+    if (result.success) {
+      toast.success('eBay Connection Successful', {
+        description: result.message,
+      })
+    } else {
+      toast.error('eBay Connection Failed', {
+        description: result.message,
+      })
+    }
+  }
+
+  const handleTestDiscogs = async () => {
+    if (!tempConfig.discogs?.userToken && (!tempConfig.discogs?.consumerKey || !tempConfig.discogs?.consumerSecret)) {
+      toast.error('Please enter Discogs credentials first')
+      return
+    }
+
+    setTestingDiscogs(true)
+    const result = await testDiscogsConnection(tempConfig.discogs!)
+    setTestingDiscogs(false)
+
+    if (result.success) {
+      toast.success('Discogs Connection Successful', {
+        description: result.message,
+      })
+    } else {
+      toast.error('Discogs Connection Failed', {
+        description: result.message,
+      })
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Marketplace Integration Settings</DialogTitle>
+          <DialogTitle>Real Marketplace Integration</DialogTitle>
           <DialogDescription>
-            Configure API credentials to scan eBay and Discogs for bargains
+            Connect to live eBay and Discogs APIs for real-time bargain scanning across actual marketplace listings
           </DialogDescription>
         </DialogHeader>
+
+        <Alert className="bg-accent/10 border-accent/30">
+          <Lightning size={16} className="text-accent" />
+          <AlertDescription className="text-sm">
+            <span className="font-semibold text-accent-foreground">Live API Integration:</span> This app uses{' '}
+            <span className="font-mono text-accent-foreground">real eBay Finding API</span> and{' '}
+            <span className="font-mono text-accent-foreground">Discogs Marketplace API</span> to scan thousands of actual live listings.
+            Add your API credentials to enable real-time bargain discovery.
+          </AlertDescription>
+        </Alert>
 
         <Tabs defaultValue="ebay" className="mt-4">
           <TabsList className="grid w-full grid-cols-2">
@@ -142,6 +198,17 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
                       Optional: EBAY-US, EBAY-GB, EBAY-DE, etc. (defaults to EBAY-US)
                     </p>
                   </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestEbay}
+                    disabled={!tempConfig.ebay?.appId || testingEbay}
+                    className="w-full gap-2"
+                  >
+                    <Lightning size={16} />
+                    {testingEbay ? 'Testing Connection...' : 'Test eBay Connection'}
+                  </Button>
                 </Card>
               </>
             )}
@@ -217,6 +284,17 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
                       disabled={!!tempConfig.discogs?.userToken}
                     />
                   </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestDiscogs}
+                    disabled={(!tempConfig.discogs?.userToken && (!tempConfig.discogs?.consumerKey || !tempConfig.discogs?.consumerSecret)) || testingDiscogs}
+                    className="w-full gap-2"
+                  >
+                    <Lightning size={16} />
+                    {testingDiscogs ? 'Testing Connection...' : 'Test Discogs Connection'}
+                  </Button>
                 </Card>
               </>
             )}

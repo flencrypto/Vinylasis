@@ -167,3 +167,26 @@ export async function scanEbayForBargains(
 
   return allListings
 }
+
+export async function testEbayConnection(config: EbayApiConfig): Promise<{ success: boolean; message: string; count?: number }> {
+  try {
+    const listings = await searchEbayVinyl(
+      {
+        keywords: 'vinyl LP',
+        entriesPerPage: 1,
+      },
+      config
+    )
+    
+    return {
+      success: true,
+      message: `eBay API connected successfully. Found ${listings.length} test listing(s).`,
+      count: listings.length,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error connecting to eBay API',
+    }
+  }
+}
