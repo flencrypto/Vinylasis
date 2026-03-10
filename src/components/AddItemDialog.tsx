@@ -5,7 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { CollectionItem, Format, MediaGrade, SleeveGrade, SourceType } from '@/lib/types'
+import { Separator } from '@/components/ui/separator'
+import { CollectionItem, Format, MediaGrade, SleeveGrade, SourceType, PressingCandidate, ItemImage } from '@/lib/types'
+import { ImageUpload } from '@/components/ImageUpload'
+import { PressingIdentificationDialog } from '@/components/PressingIdentificationDialog'
+import { Sparkle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface AddItemDialogProps {
@@ -30,6 +34,9 @@ export function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps)
     storageLocation: '',
     notes: '',
   })
+  
+  const [images, setImages] = useState<ItemImage[]>([])
+  const [identificationDialogOpen, setIdentificationDialogOpen] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +45,8 @@ export function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps)
       toast.error('Please fill in artist and title')
       return
     }
+
+    const imageDataUrls = images.length > 0 ? images.map(img => img.dataUrl) : undefined
 
     const newItem: CollectionItem = {
       id: `item-${Date.now()}`,
@@ -62,6 +71,7 @@ export function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps)
         gradingStandard: 'Goldmine',
         gradedAt: new Date().toISOString(),
       },
+      images: imageDataUrls,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
@@ -85,19 +95,48 @@ export function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps)
       storageLocation: '',
       notes: '',
     })
+    setImages([])
+  }
+
+  const handlePressingIdentified = (candidate: PressingCandidate, identifiedImages: ItemImage[]) => {
+    setFormData({
+      ...formData,
+      artistName: candidate.artistName,
+      releaseTitle: candidate.releaseTitle,
+      year: candidate.year,
+      country: candidate.country,
+      format: candidate.format,
+      catalogNumber: candidate.catalogNumber || '',
+    })
+    setImages(identifiedImages)
+    toast.success('Pressing details filled from AI identification')
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add Item to Collection</DialogTitle>
-          <DialogDescription>
-            Enter the details of your vinyl record
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Item to Collection</DialogTitle>
+            <DialogDescription>
+              Enter the details of your vinyl record or use AI identification
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIdentificationDialogOpen(true)}
+                className="gap-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+              >
+                <Sparkle size={20} weight="fill" />
+                Identify from Images with AI
+              </Button>
+            </div>
+
+            <Separator />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
               <Label htmlFor="artistName">Artist *</Label>
@@ -275,6 +314,11 @@ export function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps)
                 rows={3}
               />
             </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label>Images</Label>
+              <ImageUpload images={images} onImagesChange={setImages} maxImages={6} />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3">
@@ -288,5 +332,12 @@ export function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDialogProps)
         </form>
       </DialogContent>
     </Dialog>
+
+    <PressingIdentificationDialog
+      open={identificationDialogOpen}
+      onOpenChange={setIdentificationDialogOpen}
+      onSelect={handlePressingIdentified}
+    />
+  </>
   )
 }

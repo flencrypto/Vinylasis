@@ -40,6 +40,13 @@ This is a professional tool for managing valuable collections with multiple inte
 - **Progression**: Request valuation → Analyze pressing rarity → Factor condition grades → Query comparable sales → Calculate estimate range (low/mid/high) → Display confidence score → Show comp references → Highlight value drivers
 - **Success criteria**: Estimates appear within 2s, show reasonable ranges, reference actual comps, explain confidence level
 
+### Image Upload & AI Pressing Identification
+- **Functionality**: Upload photos of vinyl records (covers, labels, runouts) and use AI vision to automatically identify pressing details including catalog numbers, matrix codes, and pressing variants
+- **Purpose**: Dramatically reduces manual data entry and improves accuracy by extracting metadata directly from images
+- **Trigger**: User clicks "Identify from Images with AI" in add item dialog or uploads images during item creation
+- **Progression**: Upload images (front/back cover, labels, runout) → Select image types → Add optional hints (artist, title, year) → AI analyzes all images → Extracts text, catalog numbers, matrix codes → Matches against pressing database → Returns ranked candidates with confidence scores → User selects best match → Form auto-fills with pressing details
+- **Success criteria**: Analysis completes in <10s for 3-6 images, correctly identifies pressing in 70%+ of cases with clear images, provides helpful confidence scores, gracefully handles unclear images
+
 ### Inventory & Listing Workflow
 - **Functionality**: Manage items for sale, create marketplace listings with AI-generated descriptions, track listing status and sales
 - **Purpose**: Streamlines seller workflow from inventory flagging to marketplace publishing

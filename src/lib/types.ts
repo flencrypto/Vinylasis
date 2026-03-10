@@ -109,6 +109,41 @@ export interface ListingDraft {
   createdAt: string
 }
 
+export type ImageType = 'front_cover' | 'back_cover' | 'label' | 'runout' | 'insert' | 'spine'
+
+export interface ItemImage {
+  id: string
+  itemId?: string
+  type: ImageType
+  dataUrl: string
+  mimeType: string
+  uploadedAt: string
+}
+
+export interface PressingCandidate {
+  id: string
+  pressingName: string
+  releaseTitle: string
+  artistName: string
+  year: number
+  country: string
+  format: Format
+  catalogNumber?: string
+  matrixNumbers?: string[]
+  confidence: number
+  matchedIdentifiers: string[]
+  reasoning: string
+}
+
+export interface ImageAnalysisResult {
+  extractedText: string[]
+  identifiedLabels: string[]
+  matrixNumbers: string[]
+  catalogNumbers: string[]
+  barcodes: string[]
+  confidence: number
+}
+
 export const GRADE_DESCRIPTIONS: Record<MediaGrade, string> = {
   M: 'Mint - Perfect condition, never played',
   NM: 'Near Mint - Looks and sounds like new',
