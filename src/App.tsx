@@ -13,11 +13,12 @@ import { AddWatchlistDialog } from '@/components/AddWatchlistDialog'
 import { MarketplaceSettingsDialog } from '@/components/MarketplaceSettingsDialog'
 import { MintNFTDialog } from '@/components/MintNFTDialog'
 import { NFTCard } from '@/components/NFTCard'
+import { AIChatDialog } from '@/components/AIChatDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Toaster } from '@/components/ui/sonner'
-import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront, Sparkle, Binoculars, Lightning, Gear, Coins } from '@phosphor-icons/react'
+import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront, Sparkle, Binoculars, Lightning, Gear, Coins, ChatCircleDots } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { scanMarketplaces, MarketplaceConfig, getDefaultMarketplaceConfig, validateMarketplaceConfig } from '@/lib/marketplace-scanner'
 import { analyzeBargainPotential } from '@/lib/bargain-detection-ai'
@@ -36,8 +37,10 @@ function App() {
   const [watchlistDialogOpen, setWatchlistDialogOpen] = useState(false)
   const [marketplaceSettingsOpen, setMarketplaceSettingsOpen] = useState(false)
   const [mintNFTDialogOpen, setMintNFTDialogOpen] = useState(false)
+  const [aiChatOpen, setAiChatOpen] = useState(false)
   const [selectedItemForListing, setSelectedItemForListing] = useState<CollectionItem | null>(null)
   const [selectedItemForMinting, setSelectedItemForMinting] = useState<CollectionItem | null>(null)
+  const [selectedItemForChat, setSelectedItemForChat] = useState<CollectionItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [mainView, setMainView] = useState<MainView>('collection')
@@ -170,6 +173,17 @@ function App() {
     toast.success('NFT removed from collection')
   }
 
+  const handleApplyItemCorrection = (itemId: string, corrections: Record<string, string>) => {
+    setItems(currentItems =>
+      (currentItems || []).map(item => {
+        if (item.id === itemId) {
+          return { ...item, ...corrections, updatedAt: new Date().toISOString() }
+        }
+        return item
+      })
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Toaster />
@@ -228,10 +242,23 @@ function App() {
                 </Button>
               </div>
             </div>
-            <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
-              <Plus size={20} />
-              Add Item
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSelectedItemForChat(null)
+                  setAiChatOpen(true)
+                }} 
+                className="gap-2"
+              >
+                <ChatCircleDots size={20} />
+                AI Assistant
+              </Button>
+              <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+                <Plus size={20} />
+                Add Item
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -316,6 +343,18 @@ function App() {
                             onClick={() => {}}
                           />
                           <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItemForChat(item)
+                                setAiChatOpen(true)
+                              }}
+                              variant="outline"
+                              className="gap-2 bg-background/95 backdrop-blur"
+                            >
+                              <ChatCircleDots size={16} />
+                              Ask AI
+                            </Button>
                             <Button
                               size="sm"
                               onClick={() => handleMintItem(item)}
@@ -663,6 +702,14 @@ function App() {
         onOpenChange={setMintNFTDialogOpen}
         item={selectedItemForMinting}
         onMintComplete={handleMintComplete}
+      />
+
+      <AIChatDialog
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+        item={selectedItemForChat || undefined}
+        allItems={safeItems}
+        onApplyCorrection={handleApplyItemCorrection}
       />
     </div>
   )
