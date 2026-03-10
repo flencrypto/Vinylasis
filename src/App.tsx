@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { CollectionItem, CollectionStats, ListingDraft, BargainCard as BargainCardType, WatchlistItem } from '@/lib/types'
+import { CollectionItem, CollectionStats, ListingDraft, BargainCard as BargainCardType, WatchlistItem, MintedNFT } from '@/lib/types'
 import { calculateCollectionValue, formatCurrency } from '@/lib/helpers'
 import { StatCard } from '@/components/StatCard'
 import { ItemCard } from '@/components/ItemCard'
@@ -11,28 +11,33 @@ import { BargainCard } from '@/components/BargainCard'
 import { WatchlistCard } from '@/components/WatchlistCard'
 import { AddWatchlistDialog } from '@/components/AddWatchlistDialog'
 import { MarketplaceSettingsDialog } from '@/components/MarketplaceSettingsDialog'
+import { MintNFTDialog } from '@/components/MintNFTDialog'
+import { NFTCard } from '@/components/NFTCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Toaster } from '@/components/ui/sonner'
-import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront, Sparkle, Binoculars, Lightning, Gear } from '@phosphor-icons/react'
+import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront, Sparkle, Binoculars, Lightning, Gear, Coins } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { scanMarketplaces, MarketplaceConfig, getDefaultMarketplaceConfig, validateMarketplaceConfig } from '@/lib/marketplace-scanner'
 import { analyzeBargainPotential } from '@/lib/bargain-detection-ai'
 
-type MainView = 'collection' | 'listings' | 'watchlist' | 'bargains'
+type MainView = 'collection' | 'listings' | 'watchlist' | 'bargains' | 'nfts'
 
 function App() {
   const [items, setItems] = useKV<CollectionItem[]>('collection-items', [])
   const [listingDrafts, setListingDrafts] = useKV<ListingDraft[]>('listing-drafts', [])
   const [watchlistItems, setWatchlistItems] = useKV<WatchlistItem[]>('watchlist-items', [])
   const [bargainCards, setBargainCards] = useKV<BargainCardType[]>('bargain-cards', [])
+  const [mintedNFTs, setMintedNFTs] = useKV<MintedNFT[]>('minted-nfts', [])
   const [marketplaceConfig] = useKV<MarketplaceConfig>('marketplace-config', getDefaultMarketplaceConfig())
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [listingGenOpen, setListingGenOpen] = useState(false)
   const [watchlistDialogOpen, setWatchlistDialogOpen] = useState(false)
   const [marketplaceSettingsOpen, setMarketplaceSettingsOpen] = useState(false)
+  const [mintNFTDialogOpen, setMintNFTDialogOpen] = useState(false)
   const [selectedItemForListing, setSelectedItemForListing] = useState<CollectionItem | null>(null)
+  const [selectedItemForMinting, setSelectedItemForMinting] = useState<CollectionItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [mainView, setMainView] = useState<MainView>('collection')
@@ -42,6 +47,7 @@ function App() {
   const safeDrafts = listingDrafts || []
   const safeWatchlist = watchlistItems || []
   const safeBargains = bargainCards || []
+  const safeNFTs = mintedNFTs || []
 
   const stats: CollectionStats = useMemo(() => {
     const totalValue = calculateCollectionValue(safeItems)
@@ -146,6 +152,24 @@ function App() {
     )
   }
 
+  const handleMintItem = (item: CollectionItem) => {
+    setSelectedItemForMinting(item)
+    setMintNFTDialogOpen(true)
+  }
+
+  const handleMintComplete = (nft: MintedNFT) => {
+    setMintedNFTs(currentNFTs => [...(currentNFTs || []), nft])
+    toast.success('NFT minted successfully!')
+    setTimeout(() => {
+      setMainView('nfts')
+    }, 500)
+  }
+
+  const handleDeleteNFT = (nftId: string) => {
+    setMintedNFTs(currentNFTs => (currentNFTs || []).filter(n => n.id !== nftId))
+    toast.success('NFT removed from collection')
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Toaster />
@@ -193,6 +217,14 @@ function App() {
                 >
                   <Storefront size={18} />
                   Listings ({safeDrafts.length})
+                </Button>
+                <Button 
+                  variant={mainView === 'nfts' ? 'default' : 'outline'}
+                  onClick={() => setMainView('nfts')}
+                  className="gap-2"
+                >
+                  <Coins size={18} weight="fill" />
+                  NFTs ({safeNFTs.length})
                 </Button>
               </div>
             </div>
@@ -283,7 +315,16 @@ function App() {
                             item={item}
                             onClick={() => {}}
                           />
-                          <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleMintItem(item)}
+                              variant="outline"
+                              className="gap-2 bg-background/95 backdrop-blur"
+                            >
+                              <Coins size={16} weight="fill" />
+                              Mint NFT
+                            </Button>
                             <Button
                               size="sm"
                               onClick={() => handleCreateListing(item)}
@@ -500,6 +541,48 @@ function App() {
               </div>
             )}
           </div>
+        ) : mainView === 'nfts' ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">NFT Collection</h2>
+                <p className="text-muted-foreground mt-1">
+                  Verifiable blockchain records of your physical vinyl collection
+                </p>
+              </div>
+            </div>
+
+            {safeNFTs.length === 0 ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <Coins size={64} className="text-muted-foreground mx-auto mb-4" weight="thin" />
+                <h3 className="text-lg font-semibold mb-2">No NFTs minted yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  Turn your physical vinyl records into verifiable Solana NFTs with on-chain provenance tracking and secondary sale royalties
+                </p>
+                {safeItems.length > 0 && (
+                  <Button onClick={() => setMainView('collection')} className="gap-2">
+                    <Package size={20} />
+                    Browse Collection
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {safeNFTs.map(nft => {
+                  const item = safeItems.find(i => i.id === nft.itemId)
+                  return (
+                    <NFTCard
+                      key={nft.id}
+                      nft={nft}
+                      itemTitle={item ? `${item.artistName} - ${item.releaseTitle}` : undefined}
+                      itemImage={item?.images?.[0]}
+                      onDelete={handleDeleteNFT}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -573,6 +656,13 @@ function App() {
       <MarketplaceSettingsDialog
         open={marketplaceSettingsOpen}
         onOpenChange={setMarketplaceSettingsOpen}
+      />
+
+      <MintNFTDialog
+        open={mintNFTDialogOpen}
+        onOpenChange={setMintNFTDialogOpen}
+        item={selectedItemForMinting}
+        onMintComplete={handleMintComplete}
       />
     </div>
   )

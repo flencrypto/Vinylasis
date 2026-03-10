@@ -245,3 +245,28 @@ export interface WatchlistMatch {
   notifiedAt?: string
   createdAt: string
 }
+
+export interface MintedNFT {
+  id: string
+  itemId: string
+  mintAddress: string
+  metadataUri: string
+  transactionSignature: string
+  network: 'mainnet-beta' | 'devnet' | 'testnet'
+  mintedAt: string
+  ownerAddress: string
+  sellerFeeBasisPoints: number
+}
+
+export interface NFTTransfer {
+  id: string
+  nftId: string
+  fromAddress: string
+  toAddress: string
+  transactionSignature: string
+  transferredAt: string
+  salePrice?: number
+  currency?: string
+}
+
+export type SolanaNetwork = 'mainnet-beta' | 'devnet' | 'testnet'
