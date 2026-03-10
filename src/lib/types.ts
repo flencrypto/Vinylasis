@@ -170,3 +170,78 @@ export const STATUS_LABELS: Record<ItemStatus, string> = {
   traded: 'Traded',
   archived: 'Archived',
 }
+
+export type WatchlistType = 'artist' | 'release' | 'pressing' | 'freetext'
+export type BargainSignalType = 
+  | 'title_mismatch' 
+  | 'low_price' 
+  | 'wrong_category' 
+  | 'job_lot' 
+  | 'promo_keywords' 
+  | 'poor_metadata'
+
+export interface WatchlistItem {
+  id: string
+  collectionId: string
+  type: WatchlistType
+  artistName?: string
+  releaseTitle?: string
+  pressingDetails?: string
+  searchQuery?: string
+  targetPrice?: number
+  targetCurrency: string
+  notifyOnMatch: boolean
+  createdAt: string
+  lastScannedAt?: string
+}
+
+export interface BargainSignal {
+  type: BargainSignalType
+  score: number
+  description: string
+  evidence?: string
+}
+
+export interface MarketListing {
+  id: string
+  source: 'ebay' | 'discogs' | 'reverb' | 'other'
+  externalId: string
+  title: string
+  description?: string
+  price: number
+  currency: string
+  condition?: string
+  seller: string
+  location?: string
+  imageUrls?: string[]
+  listedAt: string
+  url: string
+}
+
+export interface BargainCard {
+  id: string
+  listing: MarketListing
+  watchlistItemId?: string
+  bargainScore: number
+  estimatedValue?: number
+  estimatedUpside?: number
+  signals: BargainSignal[]
+  matchedRelease?: {
+    artistName: string
+    releaseTitle: string
+    year: number
+    catalogNumber?: string
+  }
+  savedAt: string
+  viewed: boolean
+}
+
+export interface WatchlistMatch {
+  id: string
+  watchlistItemId: string
+  listingId: string
+  matchScore: number
+  matchReason: string
+  notifiedAt?: string
+  createdAt: string
+}

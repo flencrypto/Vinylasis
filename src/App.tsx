@@ -1,31 +1,41 @@
 import { useState, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { CollectionItem, CollectionStats, ListingDraft } from '@/lib/types'
+import { CollectionItem, CollectionStats, ListingDraft, BargainCard as BargainCardType, WatchlistItem } from '@/lib/types'
 import { calculateCollectionValue, formatCurrency } from '@/lib/helpers'
 import { StatCard } from '@/components/StatCard'
 import { ItemCard } from '@/components/ItemCard'
 import { AddItemDialog } from '@/components/AddItemDialog'
 import { ListingGenerator } from '@/components/ListingGenerator'
 import { ListingDraftCard } from '@/components/ListingDraftCard'
+import { BargainCard } from '@/components/BargainCard'
+import { WatchlistCard } from '@/components/WatchlistCard'
+import { AddWatchlistDialog } from '@/components/AddWatchlistDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Toaster } from '@/components/ui/sonner'
-import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront, Sparkle } from '@phosphor-icons/react'
+import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront, Sparkle, Binoculars, Lightning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+
+type MainView = 'collection' | 'listings' | 'watchlist' | 'bargains'
 
 function App() {
   const [items, setItems] = useKV<CollectionItem[]>('collection-items', [])
   const [listingDrafts, setListingDrafts] = useKV<ListingDraft[]>('listing-drafts', [])
+  const [watchlistItems, setWatchlistItems] = useKV<WatchlistItem[]>('watchlist-items', [])
+  const [bargainCards, setBargainCards] = useKV<BargainCardType[]>('bargain-cards', [])
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [listingGenOpen, setListingGenOpen] = useState(false)
+  const [watchlistDialogOpen, setWatchlistDialogOpen] = useState(false)
   const [selectedItemForListing, setSelectedItemForListing] = useState<CollectionItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [mainView, setMainView] = useState<'collection' | 'listings'>('collection')
+  const [mainView, setMainView] = useState<MainView>('collection')
 
   const safeItems = items || []
   const safeDrafts = listingDrafts || []
+  const safeWatchlist = watchlistItems || []
+  const safeBargains = bargainCards || []
 
   const stats: CollectionStats = useMemo(() => {
     const totalValue = calculateCollectionValue(safeItems)
@@ -90,6 +100,46 @@ function App() {
     toast.success('Draft deleted')
   }
 
+  const handleAddWatchlistItem = (watchlistItem: WatchlistItem) => {
+    setWatchlistItems(currentItems => [...(currentItems || []), watchlistItem])
+    toast.success('Added to watchlist')
+  }
+
+  const handleDeleteWatchlistItem = (watchlistId: string) => {
+    setWatchlistItems(currentItems => (currentItems || []).filter(w => w.id !== watchlistId))
+    toast.success('Removed from watchlist')
+  }
+
+  const handleToggleWatchlistNotify = (watchlistId: string) => {
+    setWatchlistItems(currentItems =>
+      (currentItems || []).map(w =>
+        w.id === watchlistId ? { ...w, notifyOnMatch: !w.notifyOnMatch } : w
+      )
+    )
+    toast.success('Notification settings updated')
+  }
+
+  const handleDeleteBargain = (bargainId: string) => {
+    setBargainCards(currentBargains => (currentBargains || []).filter(b => b.id !== bargainId))
+    toast.success('Bargain removed')
+  }
+
+  const handleMarkBargainViewed = (bargainId: string) => {
+    setBargainCards(currentBargains =>
+      (currentBargains || []).map(b =>
+        b.id === bargainId ? { ...b, viewed: !b.viewed } : b
+      )
+    )
+  }
+
+  const handleViewBargain = (bargainId: string) => {
+    setBargainCards(currentBargains =>
+      (currentBargains || []).map(b =>
+        b.id === bargainId ? { ...b, viewed: true } : b
+      )
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Toaster />
@@ -113,6 +163,22 @@ function App() {
                 >
                   <Package size={18} />
                   Collection
+                </Button>
+                <Button 
+                  variant={mainView === 'watchlist' ? 'default' : 'outline'}
+                  onClick={() => setMainView('watchlist')}
+                  className="gap-2"
+                >
+                  <Binoculars size={18} />
+                  Watchlist ({safeWatchlist.length})
+                </Button>
+                <Button 
+                  variant={mainView === 'bargains' ? 'default' : 'outline'}
+                  onClick={() => setMainView('bargains')}
+                  className="gap-2"
+                >
+                  <Lightning size={18} weight="fill" />
+                  Bargains ({safeBargains.filter(b => !b.viewed).length})
                 </Button>
                 <Button 
                   variant={mainView === 'listings' ? 'default' : 'outline'}
@@ -229,6 +295,150 @@ function App() {
               </Tabs>
             </div>
           </>
+        ) : mainView === 'watchlist' ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">Watchlist</h2>
+                <p className="text-muted-foreground mt-1">
+                  Track records you're hunting and get notified of bargains
+                </p>
+              </div>
+              <Button onClick={() => setWatchlistDialogOpen(true)} className="gap-2">
+                <Plus size={20} />
+                Add Watch
+              </Button>
+            </div>
+
+            {safeWatchlist.length === 0 ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <Binoculars size={64} className="text-muted-foreground mx-auto mb-4" weight="thin" />
+                <h3 className="text-lg font-semibold mb-2">No watchlist items yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  Set up watches for specific artists, releases, or pressings you're looking for
+                </p>
+                <Button onClick={() => setWatchlistDialogOpen(true)} className="gap-2">
+                  <Plus size={20} />
+                  Add Your First Watch
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {safeWatchlist.map(watchlistItem => (
+                  <WatchlistCard
+                    key={watchlistItem.id}
+                    watchlist={watchlistItem}
+                    onDelete={() => handleDeleteWatchlistItem(watchlistItem.id)}
+                    onToggleNotify={() => handleToggleWatchlistNotify(watchlistItem.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : mainView === 'bargains' ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">Bargain Hunter</h2>
+                <p className="text-muted-foreground mt-1">
+                  AI-discovered deals, misdescribed lots, and undervalued listings
+                </p>
+              </div>
+              <Button 
+                onClick={async () => {
+                  toast.loading('Scanning marketplace...')
+                  const { generateMockMarketListings } = await import('@/lib/bargain-detection-ai')
+                  const { analyzeBargainPotential } = await import('@/lib/bargain-detection-ai')
+                  
+                  const listings = await generateMockMarketListings(5)
+                  const newBargains: BargainCardType[] = []
+                  
+                  for (const listing of listings) {
+                    const analysis = await analyzeBargainPotential({ listing, watchlistItems: safeWatchlist })
+                    
+                    if (analysis.bargainScore >= 40) {
+                      const newBargain: BargainCardType = {
+                        id: `bargain-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        listing,
+                        bargainScore: analysis.bargainScore,
+                        estimatedValue: analysis.estimatedValue,
+                        estimatedUpside: analysis.estimatedUpside,
+                        signals: analysis.signals,
+                        matchedRelease: analysis.matchedRelease,
+                        savedAt: new Date().toISOString(),
+                        viewed: false,
+                      }
+                      newBargains.push(newBargain)
+                    }
+                  }
+                  
+                  setBargainCards(currentBargains => [...(currentBargains || []), ...newBargains])
+                  toast.success(`Found ${newBargains.length} potential bargains`)
+                }} 
+                className="gap-2"
+              >
+                <Lightning size={20} weight="fill" />
+                Scan Market
+              </Button>
+            </div>
+
+            {safeBargains.length === 0 ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <Lightning size={64} className="text-muted-foreground mx-auto mb-4" weight="thin" />
+                <h3 className="text-lg font-semibold mb-2">No bargains discovered yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  Run market scans to find undervalued listings, misdescribed lots, and hidden gems
+                </p>
+                <Button onClick={async () => {
+                  toast.loading('Scanning marketplace...')
+                  const { generateMockMarketListings } = await import('@/lib/bargain-detection-ai')
+                  const { analyzeBargainPotential } = await import('@/lib/bargain-detection-ai')
+                  
+                  const listings = await generateMockMarketListings(10)
+                  const newBargains: BargainCardType[] = []
+                  
+                  for (const listing of listings) {
+                    const analysis = await analyzeBargainPotential({ listing, watchlistItems: safeWatchlist })
+                    
+                    if (analysis.bargainScore >= 40) {
+                      const newBargain: BargainCardType = {
+                        id: `bargain-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        listing,
+                        bargainScore: analysis.bargainScore,
+                        estimatedValue: analysis.estimatedValue,
+                        estimatedUpside: analysis.estimatedUpside,
+                        signals: analysis.signals,
+                        matchedRelease: analysis.matchedRelease,
+                        savedAt: new Date().toISOString(),
+                        viewed: false,
+                      }
+                      newBargains.push(newBargain)
+                    }
+                  }
+                  
+                  setBargainCards(currentBargains => [...(currentBargains || []), ...newBargains])
+                  toast.success(`Found ${newBargains.length} potential bargains`)
+                }} className="gap-2">
+                  <Lightning size={20} weight="fill" />
+                  Scan Market Now
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {safeBargains
+                  .sort((a, b) => b.bargainScore - a.bargainScore)
+                  .map(bargain => (
+                    <BargainCard
+                      key={bargain.id}
+                      bargain={bargain}
+                      onView={() => handleViewBargain(bargain.id)}
+                      onDelete={() => handleDeleteBargain(bargain.id)}
+                      onMarkViewed={() => handleMarkBargainViewed(bargain.id)}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -283,6 +493,13 @@ function App() {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onAdd={handleAddItem}
+      />
+
+      <AddWatchlistDialog
+        open={watchlistDialogOpen}
+        onOpenChange={setWatchlistDialogOpen}
+        onAdd={handleAddWatchlistItem}
+        collectionId="default"
       />
 
       <ListingGenerator
