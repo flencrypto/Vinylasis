@@ -14,6 +14,7 @@ import { MarketplaceSettingsDialog } from '@/components/MarketplaceSettingsDialo
 import { MintNFTDialog } from '@/components/MintNFTDialog'
 import { NFTCard } from '@/components/NFTCard'
 import { AIChatDialog } from '@/components/AIChatDialog'
+import { ValuationDialog } from '@/components/ValuationDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -41,6 +42,7 @@ function App() {
   const [selectedItemForListing, setSelectedItemForListing] = useState<CollectionItem | null>(null)
   const [selectedItemForMinting, setSelectedItemForMinting] = useState<CollectionItem | null>(null)
   const [selectedItemForChat, setSelectedItemForChat] = useState<CollectionItem | null>(null)
+  const [selectedItemForValuation, setSelectedItemForValuation] = useState<CollectionItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [mainView, setMainView] = useState<MainView>('collection')
@@ -343,6 +345,17 @@ function App() {
                             onClick={() => {}}
                           />
                           <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItemForValuation(item)
+                              }}
+                              variant="outline"
+                              className="gap-2 bg-background/95 backdrop-blur"
+                            >
+                              <ChartLine size={16} />
+                              Valuation
+                            </Button>
                             <Button
                               size="sm"
                               onClick={() => {
@@ -710,6 +723,12 @@ function App() {
         item={selectedItemForChat || undefined}
         allItems={safeItems}
         onApplyCorrection={handleApplyItemCorrection}
+      />
+
+      <ValuationDialog
+        open={!!selectedItemForValuation}
+        onOpenChange={(open) => !open && setSelectedItemForValuation(null)}
+        item={selectedItemForValuation}
       />
     </div>
   )

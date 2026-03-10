@@ -34,11 +34,11 @@ This is a professional tool for managing valuable collections with multiple inte
 - **Success criteria**: Grading options clearly explained, notes support rich detail, photos linked to specific grades
 
 ### Market Valuation & Intelligence
-- **Functionality**: Display estimated market value based on pressing, condition, and comparable sales data with confidence scoring
-- **Purpose**: Helps users understand their collection's worth and make informed buying/selling decisions
-- **Trigger**: View item details, request valuation estimate, or view collection-wide value summary
-- **Progression**: Request valuation → Analyze pressing rarity → Factor condition grades → Query comparable sales → Calculate estimate range (low/mid/high) → Display confidence score → Show comp references → Highlight value drivers
-- **Success criteria**: Estimates appear within 2s, show reasonable ranges, reference actual comps, explain confidence level
+- **Functionality**: Display estimated market value based on pressing, condition, and comparable sales data with confidence scoring, real-time eBay/Discogs comparable sales lookup, price trend visualization, and seller-recommended listing prices
+- **Purpose**: Helps users understand their collection's worth and make informed buying/selling decisions with defensible, data-driven estimates
+- **Trigger**: User clicks "Valuation" button on an item card
+- **Progression**: Click valuation → Display loading state → Fetch comparable sales from eBay/Discogs/internal → Analyze pressing rarity and condition adjustment → Calculate estimate range (low/mid/high) → Display detailed valuation with tabbed interface → View estimate with confidence score and drivers → Browse comparable sales with links to original listings → View price trend chart showing historical sales over time → See recommended listing price for sellers → User can override or use suggested price
+- **Success criteria**: Estimates appear within 5s including API calls, show reasonable ranges based on real data, reference actual comps with source links, explain confidence level honestly, display all value drivers with impact percentages, price trend chart renders when sufficient data exists, recommended listing price is competitive but profitable
 
 ### Image Upload & AI Pressing Identification
 - **Functionality**: Upload photos of vinyl records (covers, labels, runouts) and use AI vision to automatically identify pressing details including catalog numbers, matrix codes, and pressing variants
