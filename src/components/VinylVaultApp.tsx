@@ -9,6 +9,7 @@ import {
   Code,
   Upload,
   Gear,
+  ArrowsLeftRight,
 } from '@phosphor-icons/react'
 import CollectionView from './CollectionView'
 import BargainsView from './BargainsView'
@@ -17,8 +18,9 @@ import NFTView from './NFTView'
 import EbayDeletionChecklist from './ebay/EbayDeletionChecklist'
 import NewListingView from './NewListingView'
 import SettingsView from './SettingsView'
+import MarketplaceComparisonView from './MarketplaceComparisonView'
 
-type TabValue = 'new-listing' | 'collection' | 'bargains' | 'watchlist' | 'nfts' | 'ebay-dev' | 'settings'
+type TabValue = 'new-listing' | 'collection' | 'bargains' | 'watchlist' | 'comparison' | 'nfts' | 'ebay-dev' | 'settings'
 
 export default function VinylVaultApp() {
   const [activeTab, setActiveTab] = useKV<TabValue>('vinyl-vault-active-tab', 'new-listing')
@@ -54,6 +56,9 @@ export default function VinylVaultApp() {
             <TabsContent value="watchlist" className="m-0 mt-0">
               <WatchlistView />
             </TabsContent>
+            <TabsContent value="comparison" className="m-0 mt-0">
+              <MarketplaceComparisonView />
+            </TabsContent>
             <TabsContent value="nfts" className="m-0 mt-0">
               <NFTView />
             </TabsContent>
@@ -68,7 +73,7 @@ export default function VinylVaultApp() {
 
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 safe-area-inset-bottom">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)}>
-            <TabsList className="w-full h-16 grid grid-cols-7 bg-transparent border-0 p-0 gap-0">
+            <TabsList className="w-full h-16 grid grid-cols-8 bg-transparent border-0 p-0 gap-0">
               <TabsTrigger 
                 value="new-listing" 
                 className="flex-col gap-1 h-full rounded-none data-[state=active]:bg-slate-800/50 data-[state=active]:text-accent border-0 px-1"
@@ -96,6 +101,13 @@ export default function VinylVaultApp() {
               >
                 <Eye className="w-5 h-5" weight="fill" />
                 <span className="text-[10px] leading-tight">Watch</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="comparison" 
+                className="flex-col gap-1 h-full rounded-none data-[state=active]:bg-slate-800/50 data-[state=active]:text-accent border-0 px-1"
+              >
+                <ArrowsLeftRight className="w-5 h-5" weight="fill" />
+                <span className="text-[10px] leading-tight">Compare</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="nfts" 
