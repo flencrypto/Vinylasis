@@ -200,10 +200,67 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
     }
   }
 
+  const batchAutoDetectAll = async () => {
+    const openaiKey = apiKeys?.openaiKey
+    if (!openaiKey) {
+      toast.error('OpenAI API key not configured', {
+        description: 'Please add your OpenAI API key in Settings'
+      })
+      return
+    }
+
+    if (images.length === 0) {
+      toast.info('No images to classify')
+      return
+    }
+
+    toast.info(`Auto-detecting types for ${images.length} image${images.length > 1 ? 's' : ''}...`)
+
+    let successCount = 0
+    let failCount = 0
+
+    for (const img of images) {
+      setDetectingTypes(prev => new Set(prev).add(img.id))
+
+      try {
+        const result = await classifyImage(img.dataUrl)
+        
+        onImagesChange(
+          images.map(image =>
+            image.id === img.id 
+              ? { ...image, type: result.imageType as ImageType }
+              : image
+          )
+        )
+
+        successCount++
+      } catch (error) {
+        console.error(`Image type detection failed for ${img.id}:`, error)
+        failCount++
+      } finally {
+        setDetectingTypes(prev => {
+          const next = new Set(prev)
+          next.delete(img.id)
+          return next
+        })
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Auto-detected ${successCount} image${successCount > 1 ? 's' : ''}`, {
+        description: failCount > 0 ? `${failCount} failed - please set manually` : undefined
+      })
+    } else {
+      toast.error('Auto-detection failed for all images', {
+        description: 'Please select image types manually'
+      })
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-end gap-3">
-        <div className="flex-1 space-y-2">
+      <div className="flex items-end gap-3 flex-wrap">
+        <div className="flex-1 min-w-[200px] space-y-2">
           <Label>Image Type</Label>
           <Select value={selectedType} onValueChange={(value: ImageType) => setSelectedType(value)}>
             <SelectTrigger>
@@ -229,6 +286,18 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
           <Camera size={18} />
           Upload Images
         </Button>
+        {images.length > 0 && apiKeys?.openaiKey && autoDetectType && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={batchAutoDetectAll}
+            disabled={detectingTypes.size > 0}
+            className="gap-2"
+          >
+            <Sparkle size={18} weight="fill" />
+            Auto-Detect All Types
+          </Button>
+        )}
         {images.length > 0 && apiKeys?.imgbbKey && (
           <Button
             type="button"
@@ -356,7 +425,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       )}
 
       <p className="text-xs text-muted-foreground">
-        Upload up to {maxImages} images. {apiKeys?.openaiKey && autoDetectType ? 'AI will automatically detect image types. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
+        Upload up to {maxImages} images. {apiKeys?.openaiKey && autoDetectType ? 'AI will automatically detect image types, or use "Auto-Detect All Types" to classify all images at once. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
       </p>
     </div>
   )
