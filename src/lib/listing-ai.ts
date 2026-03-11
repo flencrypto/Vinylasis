@@ -1,4 +1,4 @@
-import { CollectionItem, MediaGrade, PriceEstimate } from './types'
+import { CollectionItem, MediaGrade, PriceEstimate, ItemImage } from './types'
 
 declare const spark: Window['spark']
 
@@ -186,6 +186,116 @@ export function suggestListingPrice(estimate: PriceEstimate, condition: MediaGra
   return Math.round(suggestedPrice * 100) / 100
 }
 
+export function generateEbayHTMLDescription(
+  item: CollectionItem,
+  description: string,
+  hostedImages: ItemImage[]
+): string {
+  const imagesWithUrls = hostedImages.filter(img => img.imgbbUrl || img.imgbbDisplayUrl)
+  
+  const imageGalleryHTML = imagesWithUrls.length > 0 ? `
+    <div style="margin: 20px 0; text-align: center;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; max-width: 800px; margin: 0 auto;">
+        ${imagesWithUrls.map(img => `
+          <div style="border: 1px solid #e0e0e0; padding: 5px; background: #fff;">
+            <img src="${img.imgbbDisplayUrl || img.imgbbUrl}" alt="${img.type.replace('_', ' ')}" style="width: 100%; height: auto; display: block;" />
+            <p style="margin: 5px 0 0 0; font-size: 11px; color: #666; text-transform: capitalize;">${img.type.replace('_', ' ')}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : ''
+
+  const conditionHTML = `
+    <div style="background: #f9f9f9; border: 2px solid #333; padding: 15px; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Condition Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px; font-weight: bold; width: 40%;">Media Grade:</td>
+          <td style="padding: 8px;">${item.condition.mediaGrade}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Sleeve Grade:</td>
+          <td style="padding: 8px;">${item.condition.sleeveGrade}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Grading Standard:</td>
+          <td style="padding: 8px;">${item.condition.gradingStandard}</td>
+        </tr>
+        ${item.condition.gradingNotes ? `
+        <tr>
+          <td style="padding: 8px; font-weight: bold; vertical-align: top;">Notes:</td>
+          <td style="padding: 8px;">${item.condition.gradingNotes}</td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
+  `
+
+  const recordDetailsHTML = `
+    <div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Record Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px; font-weight: bold; width: 40%;">Artist:</td>
+          <td style="padding: 8px;">${item.artistName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Title:</td>
+          <td style="padding: 8px;">${item.releaseTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Format:</td>
+          <td style="padding: 8px;">${item.format}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Year:</td>
+          <td style="padding: 8px;">${item.year}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Country:</td>
+          <td style="padding: 8px;">${item.country}</td>
+        </tr>
+        ${item.catalogNumber ? `
+        <tr>
+          <td style="padding: 8px; font-weight: bold;">Catalog Number:</td>
+          <td style="padding: 8px;">${item.catalogNumber}</td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
+  `
+
+  const fullHTML = `
+    <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #333;">
+      <h2 style="color: #333; margin-bottom: 20px; font-size: 24px; border-bottom: 3px solid #333; padding-bottom: 10px;">
+        ${item.artistName} - ${item.releaseTitle}
+      </h2>
+      
+      ${imageGalleryHTML}
+      
+      <div style="margin: 20px 0; line-height: 1.6;">
+        ${description.split('\n').map(para => para.trim() ? `<p style="margin: 10px 0;">${para}</p>` : '').join('')}
+      </div>
+      
+      ${recordDetailsHTML}
+      
+      ${conditionHTML}
+      
+      <div style="background: #fffbf0; border: 1px solid #ffd700; padding: 15px; margin: 20px 0;">
+        <h3 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">📦 Shipping Information</h3>
+        <p style="margin: 5px 0; font-size: 13px;">All vinyl records are shipped with care using proper record mailers and protective packaging to ensure safe delivery.</p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 12px;">Thank you for your interest in this record. Please feel free to ask any questions!</p>
+      </div>
+    </div>
+  `
+
+  return fullHTML
+}
+
 export async function generateBulkListings(
   items: CollectionItem[],
   channel: 'ebay' | 'discogs' | 'shopify'
@@ -207,4 +317,56 @@ export async function generateBulkListings(
   }
 
   return listings
+}
+
+export interface EbayListingPackage {
+  title: string
+  subtitle?: string
+  htmlDescription: string
+  plainDescription: string
+  price: number
+  currency: string
+  imageUrls: string[]
+  seoKeywords: string[]
+  condition: {
+    media: string
+    sleeve: string
+  }
+  requiresImgBBUpload: boolean
+  missingImageCount: number
+}
+
+export async function generateEbayListingPackage(
+  item: CollectionItem,
+  images: ItemImage[],
+  channel: 'ebay' | 'discogs' | 'shopify' = 'ebay'
+): Promise<EbayListingPackage> {
+  const keywords = await generateSEOKeywords(item, channel)
+  const copy = await generateListingCopy(item, channel, keywords)
+  const estimate = { estimateMid: 50, currency: item.purchaseCurrency } as PriceEstimate
+  const price = suggestListingPrice(estimate, item.condition.mediaGrade)
+
+  const hostedImages = images.filter(img => img.imgbbUrl || img.imgbbDisplayUrl)
+  const unhostedImages = images.filter(img => !img.imgbbUrl && !img.imgbbDisplayUrl)
+  
+  const imageUrls = hostedImages.map(img => img.imgbbDisplayUrl || img.imgbbUrl || '').filter(Boolean)
+  
+  const htmlDescription = generateEbayHTMLDescription(item, copy.description, hostedImages)
+
+  return {
+    title: copy.title,
+    subtitle: copy.subtitle,
+    htmlDescription,
+    plainDescription: copy.description,
+    price,
+    currency: item.purchaseCurrency,
+    imageUrls,
+    seoKeywords: keywords,
+    condition: {
+      media: item.condition.mediaGrade,
+      sleeve: item.condition.sleeveGrade
+    },
+    requiresImgBBUpload: unhostedImages.length > 0,
+    missingImageCount: unhostedImages.length
+  }
 }

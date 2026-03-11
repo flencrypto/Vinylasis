@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { X, Copy, Check } from '@phosphor-icons/react'
+import { X, Copy, Check, CloudArrowUp, Storefront } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { ItemImage, MediaGrade, SleeveGrade } from '@/lib/types'
+import { generateEbayListingPackage, EbayListingPackage } from '@/lib/listing-ai'
+import EbayListingDialog from './EbayListingDialog'
 
 interface ListingPreviewDialogProps {
   open: boolean
@@ -44,12 +46,60 @@ export function ListingPreviewDialog({
   onReset
 }: ListingPreviewDialogProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [ebayListingPackage, setEbayListingPackage] = useState<EbayListingPackage | null>(null)
+  const [showEbayDialog, setShowEbayDialog] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text)
     setCopiedField(fieldName)
     toast.success(`${fieldName} copied to clipboard`)
     setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const handleGenerateEbayListing = async () => {
+    setIsGenerating(true)
+    
+    try {
+      const itemForListing = {
+        id: `temp-${Date.now()}`,
+        collectionId: 'temp',
+        artistName: recordDetails.artistName,
+        releaseTitle: recordDetails.releaseTitle,
+        format: recordDetails.format as any,
+        year: recordDetails.year,
+        country: recordDetails.country,
+        catalogNumber: recordDetails.catalogNumber,
+        purchaseCurrency: 'USD',
+        sourceType: 'unknown' as any,
+        quantity: 1,
+        status: 'owned' as any,
+        condition: {
+          mediaGrade: conditionDetails.mediaGrade,
+          sleeveGrade: conditionDetails.sleeveGrade,
+          gradingStandard: 'Goldmine' as any,
+          gradingNotes: listingContent.conditionSummary,
+          gradedAt: new Date().toISOString()
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      const ebayPackage = await generateEbayListingPackage(itemForListing, images)
+      setEbayListingPackage(ebayPackage)
+      setShowEbayDialog(true)
+      
+      toast.success('eBay listing generated!', {
+        description: ebayPackage.requiresImgBBUpload 
+          ? `${ebayPackage.missingImageCount} images need to be uploaded` 
+          : 'All images ready for eBay'
+      })
+    } catch (error) {
+      console.error('Failed to generate eBay listing:', error)
+      toast.error('Failed to generate eBay listing')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
@@ -231,11 +281,27 @@ export function ListingPreviewDialog({
           >
             Create Another
           </Button>
+          <Button 
+            onClick={handleGenerateEbayListing}
+            disabled={isGenerating}
+            className="gap-2"
+          >
+            <Storefront className="w-4 h-4" weight="bold" />
+            {isGenerating ? 'Generating...' : 'Generate eBay Listing'}
+          </Button>
           <Button onClick={() => onOpenChange(false)}>
             Done
           </Button>
         </div>
       </DialogContent>
+
+      {showEbayDialog && ebayListingPackage && (
+        <EbayListingDialog
+          open={showEbayDialog}
+          onOpenChange={setShowEbayDialog}
+          listingPackage={ebayListingPackage}
+        />
+      )}
     </Dialog>
   )
 }
