@@ -1,133 +1,119 @@
 import { WatchlistItem } from '@/lib/types'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Bell, BellSlash, Trash, Circle } from '@phosphor-icons/react'
-import { formatCurrency } from '@/lib/helpers'
+import { Badge } from '@/components/ui/badge'
+import { Trash, Bell, BellSlash, MusicNotes, Disc, MagnifyingGlass } from '@phosphor-icons/react'
+import { motion } from 'framer-motion'
+import { formatDistanceToNow } from 'date-fns'
 
-interface WatchlistCardProps {
-  watchlist: WatchlistItem
+export interface WatchlistCardProps {
+  watchlistItem: WatchlistItem
   onDelete: () => void
-  onToggleNotify: () => void
+  onToggleNotifications: () => void
 }
 
-const WATCHLIST_TYPE_LABELS: Record<string, string> = {
-  artist: 'Artist',
-  release: 'Release',
-  pressing: 'Pressing',
-  freetext: 'Custom Search',
-}
-
-const WATCHLIST_TYPE_COLORS: Record<string, string> = {
-  artist: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  release: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  pressing: 'bg-green-500/20 text-green-400 border-green-500/30',
-  freetext: 'bg-accent/20 text-accent border-accent/30',
-}
-
-export function WatchlistCard({ watchlist, onDelete, onToggleNotify }: WatchlistCardProps) {
-  const getWatchlistTitle = () => {
-    switch (watchlist.type) {
+export function WatchlistCard({ watchlistItem, onDelete, onToggleNotifications }: WatchlistCardProps) {
+  const getWatchlistTypeLabel = () => {
+    switch (watchlistItem.type) {
       case 'artist':
-        return watchlist.artistName || 'Unnamed Artist'
+        return 'Artist'
       case 'release':
-        return `${watchlist.artistName || 'Unknown'} - ${watchlist.releaseTitle || 'Unknown Release'}`
+        return 'Release'
       case 'pressing':
-        return `${watchlist.artistName || 'Unknown'} - ${watchlist.releaseTitle || 'Unknown'} (Pressing)`
+        return 'Pressing'
       case 'freetext':
-        return watchlist.searchQuery || 'Custom Search'
-      default:
-        return 'Watch Item'
+        return 'Search'
     }
   }
 
-  const getWatchlistSubtitle = () => {
-    if (watchlist.type === 'pressing' && watchlist.pressingDetails) {
-      return watchlist.pressingDetails
+  const getWatchlistDisplay = () => {
+    const parts: string[] = []
+    
+    if (watchlistItem.artistName) parts.push(watchlistItem.artistName)
+    if (watchlistItem.releaseTitle) parts.push(watchlistItem.releaseTitle)
+    if (watchlistItem.pressingDetails) parts.push(watchlistItem.pressingDetails)
+    if (watchlistItem.searchQuery && parts.length === 0) parts.push(watchlistItem.searchQuery)
+    
+    return parts.join(' - ') || 'Untitled Watch'
+  }
+
+  const getWatchlistIcon = () => {
+    switch (watchlistItem.type) {
+      case 'artist':
+        return <MusicNotes className="w-5 h-5" weight="fill" />
+      case 'release':
+      case 'pressing':
+        return <Disc className="w-5 h-5" weight="fill" />
+      case 'freetext':
+        return <MagnifyingGlass className="w-5 h-5" weight="fill" />
     }
-    return null
   }
 
   return (
-    <Card className="p-5 hover:shadow-md transition-shadow">
-      <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge 
-                variant="outline" 
-                className={`text-xs ${WATCHLIST_TYPE_COLORS[watchlist.type] || ''}`}
-              >
-                {WATCHLIST_TYPE_LABELS[watchlist.type] || watchlist.type}
-              </Badge>
-              {watchlist.notifyOnMatch && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Bell size={12} weight="fill" />
-                  <span>Alerts On</span>
-                </div>
-              )}
-            </div>
-            <h3 className="text-base font-semibold mb-1">{getWatchlistTitle()}</h3>
-            {getWatchlistSubtitle() && (
-              <p className="text-sm text-muted-foreground">{getWatchlistSubtitle()}</p>
-            )}
-          </div>
-        </div>
-
-        {watchlist.targetPrice && (
-          <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <div className="text-xs font-medium text-muted-foreground mb-1">Target Price</div>
-            <div className="font-mono font-semibold">
-              {formatCurrency(watchlist.targetPrice, watchlist.targetCurrency)} or less
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Circle size={6} weight="fill" className="text-accent" />
-              <span>Created {new Date(watchlist.createdAt).toLocaleDateString()}</span>
-            </div>
-            {watchlist.lastScannedAt && (
-              <div className="flex items-center gap-1">
-                <Circle size={6} weight="fill" className="text-muted-foreground/50" />
-                <span>Last scan {new Date(watchlist.lastScannedAt).toLocaleDateString()}</span>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+    >
+      <Card className="p-4">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0 text-accent">
+                {getWatchlistIcon()}
               </div>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onToggleNotify}
-              className="gap-2"
-            >
-              {watchlist.notifyOnMatch ? (
-                <>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="secondary" className="text-xs">
+                    {getWatchlistTypeLabel()}
+                  </Badge>
+                  {watchlistItem.notifyOnMatch && (
+                    <Badge variant="default" className="text-xs bg-accent/20 text-accent border-accent/30">
+                      <Bell size={10} weight="fill" className="mr-1" />
+                      Alerts On
+                    </Badge>
+                  )}
+                </div>
+                <h3 className="font-semibold truncate">{getWatchlistDisplay()}</h3>
+                {watchlistItem.targetPrice && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Target: {watchlistItem.targetCurrency} {watchlistItem.targetPrice.toFixed(2)}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={onToggleNotifications}
+              >
+                {watchlistItem.notifyOnMatch ? (
+                  <Bell size={16} weight="fill" className="text-accent" />
+                ) : (
                   <BellSlash size={16} />
-                  Mute
-                </>
-              ) : (
-                <>
-                  <Bell size={16} />
-                  Notify
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDelete}
-              className="gap-2"
-            >
-              <Trash size={16} />
-              Remove
-            </Button>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={onDelete}
+              >
+                <Trash size={16} weight="fill" />
+              </Button>
+            </div>
           </div>
+          
+          {watchlistItem.lastScannedAt && (
+            <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+              Last scanned {formatDistanceToNow(new Date(watchlistItem.lastScannedAt), { addSuffix: true })}
+            </div>
+          )}
         </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   )
 }

@@ -162,3 +162,5 @@ Return ONLY valid JSON:
     reason: analysis.reason || 'No analysis available',
   }
 }
+
+export const analyzeBargain = analyzeBargainPotential
