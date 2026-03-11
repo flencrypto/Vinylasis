@@ -1,7 +1,7 @@
-import EbayDeletionChecklist from '@/components/ebay/EbayDeletionChecklist'
+import VinylVaultApp from '@/components/VinylVaultApp'
 
 function App() {
-    return <EbayDeletionChecklist />
+    return <VinylVaultApp />
 }
 
 export default App
