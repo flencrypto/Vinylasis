@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ImageUpload } from '@/components/ImageUpload'
+import BarcodeScannerWidget, { BarcodeScanResult } from '@/components/BarcodeScannerWidget'
 import { ItemImage, Format, MediaGrade, SleeveGrade } from '@/lib/types'
 import { 
   Upload, 
@@ -246,8 +247,25 @@ export default function NewListingView() {
   const isAnalyzing = !['idle', 'complete'].includes(analysisStep)
   const hasResults = analysisStep === 'complete'
 
+  const handleBarcodeScanned = (result: BarcodeScanResult) => {
+    setManualData({
+      artistName: result.artist,
+      releaseTitle: result.title,
+      year: result.year,
+      country: result.country,
+      format: result.format as Format,
+      catalogNumber: result.catalogNumber || '',
+      mediaGrade: 'VG+',
+      sleeveGrade: 'VG+',
+      notes: `Scanned via barcode: ${result.barcode}`
+    })
+    setManualOverride(true)
+    toast.success(`Pre-filled with: ${result.artist} - ${result.title}`)
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative">
+      <BarcodeScannerWidget variant="fab" onScanComplete={handleBarcodeScanned} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">

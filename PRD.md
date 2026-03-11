@@ -20,11 +20,11 @@ This is a professional tool for managing valuable collections with multiple inte
 - **Success criteria**: Dashboard loads in <1s, displays accurate collection metrics, charts render correctly, navigation is intuitive
 
 ### Item Cataloging & Management
-- **Functionality**: Add, edit, and organize vinyl records with rich metadata including pressing details, condition grading, purchase history, and storage location
-- **Purpose**: Core collection tracking with professional-grade detail capture
-- **Trigger**: User clicks "Add Item" or selects existing item
-- **Progression**: Click add/edit → Enter/scan basic info (artist, title, year) → Specify pressing details (country, catalog number, matrix) → Grade condition (media/sleeve) → Set acquisition data (date, price, source) → Assign storage location → Upload images → Save
-- **Success criteria**: Form validates all inputs, persists data correctly, supports image uploads, allows quick entry for bulk additions
+- **Functionality**: Add, edit, and organize vinyl records with rich metadata including pressing details, condition grading, purchase history, and storage location. Includes quick-action barcode scanning for rapid cataloging via UPC/EAN codes
+- **Purpose**: Core collection tracking with professional-grade detail capture, with mobile-first barcode scanning to accelerate data entry
+- **Trigger**: User clicks "Add Item", selects existing item, or uses quick-action barcode scanner
+- **Progression**: Click add/edit OR scan barcode (camera/photo upload/manual entry) → If barcode: AI identifies release from barcode number → Pre-fill artist, title, year, format, label, country → Enter/scan basic info (artist, title, year) → Specify pressing details (country, catalog number, matrix) → Grade condition (media/sleeve) → Set acquisition data (date, price, source) → Assign storage location → Upload images → Save
+- **Success criteria**: Form validates all inputs, persists data correctly, supports image uploads, allows quick entry for bulk additions, barcode lookup succeeds within 3-5s with >70% accuracy for common releases, pre-fills form fields accurately
 
 ### Condition Grading System
 - **Functionality**: Professional vinyl grading using Goldmine standards (M, NM, EX, VG+, VG, G, F, P) for both media and sleeve with detailed notes
@@ -71,11 +71,11 @@ This is a professional tool for managing valuable collections with multiple inte
 - **Success criteria**: Analysis completes in <15s for 3-6 images + Discogs API calls, correctly identifies pressing in 80%+ of cases with clear images and database matches, provides detailed evidence for each candidate, confidence bands accurately reflect match quality, supports ambiguous outcomes without fabricating certainty, gracefully handles incomplete data, manual hints improve results when images are unclear, **Discogs database matches appear with high confidence and include Discogs release IDs**, system falls back to AI-generated suggestions when API not configured or no matches found
 
 ### Inventory & Listing Workflow
-- **Functionality**: Manage items for sale, create marketplace listings with AI-generated descriptions, track listing status and sales
-- **Purpose**: Streamlines seller workflow from inventory flagging to marketplace publishing
-- **Trigger**: User marks item "for sale" or creates new listing draft
-- **Progression**: Select item for sale → Generate listing draft → Review AI-suggested title/description → Set price (manual or AI-suggested) → Configure shipping → Preview listing → Publish or save draft → Track listing status → Record sale when completed
-- **Success criteria**: Draft generation completes in <3s, copy is marketplace-ready, pricing suggestions are reasonable, status tracking is accurate
+- **Functionality**: Manage items for sale, create marketplace listings with AI-generated descriptions, track listing status and sales. Includes floating barcode scanner FAB (Floating Action Button) for quick pre-filling of listing forms
+- **Purpose**: Streamlines seller workflow from inventory flagging to marketplace publishing, with mobile-optimized barcode scanning for rapid listing creation
+- **Trigger**: User marks item "for sale", creates new listing draft, or taps floating barcode scanner button
+- **Progression**: Select item for sale OR scan barcode → Generate listing draft → Review AI-suggested title/description → Set price (manual or AI-suggested) → Configure shipping → Preview listing → Publish or save draft → Track listing status → Record sale when completed
+- **Success criteria**: Draft generation completes in <3s, copy is marketplace-ready, pricing suggestions are reasonable, status tracking is accurate, barcode scanner pre-fills form accurately and remains accessible as FAB on mobile
 
 ### Watchlist & Market Monitoring
 - **Functionality**: Create targeted watch items for specific artists, releases, or pressings; receive scored bargain alerts when matching listings appear across eBay and Discogs marketplaces
@@ -98,9 +98,18 @@ This is a professional tool for managing valuable collections with multiple inte
 - **Progression**: Click settings icon → Enable eBay and/or Discogs → Enter API credentials (eBay App ID, Discogs personal token OR consumer key/secret) → Click test connection → System validates credentials with test API call → Display success/error message → Save validated configuration → Credentials persist in browser KV store
 - **Success criteria**: API key input is password-masked, test connections provide clear success/failure feedback, invalid configurations prevent saves with helpful error messages, credentials persist between sessions
 
-## Edge Case Handling
+### Barcode Scanning & Quick Actions
+- **Functionality**: Mobile-first barcode scanning using device camera, photo upload, or manual entry to rapidly identify vinyl releases via UPC/EAN codes. Available as quick-action widget cards in Collection view and floating action button (FAB) in New Listing view. AI-powered barcode-to-release matching using GPT-4's knowledge base
+- **Purpose**: Dramatically accelerates cataloging and listing workflows by eliminating manual data entry for basic release information, optimized for mobile Android-first experience with thumb-friendly FAB placement
+- **Trigger**: User taps barcode quick-action card in Collection view, taps floating barcode FAB in New Listing view, or accesses via any barcode scanner widget
+- **Progression**: Tap barcode widget → Choose scan method (camera/upload photo/manual entry) → If camera: grant permissions → frame barcode → capture → AI extracts barcode digits from image → lookup barcode via GPT-4 knowledge base → return release details (artist, title, year, format, label, country, catalog#) → display results → user confirms → pre-fill target form with all matched data
+- **Success criteria**: Barcode detection from camera/photo succeeds in <5s with 85%+ accuracy for clear images, barcode lookup completes in 3-5s, correctly identifies 70%+ of common vinyl releases, FAB remains accessible and doesn't obstruct content, manual entry fallback works reliably, pre-filled data is accurate and saves 60%+ of typing effort
 
 - **Unidentified Items**: Allow custom title/notes when pressing cannot be matched; flag for later identification
+- **Barcode Not Found**: Display clear "not found" message with option to enter details manually; allow proceeding without barcode match
+- **Camera Permission Denied**: Automatically fall back to manual barcode entry with helpful guidance
+- **Barcode Detection Failure**: Suggest better lighting, clearer framing, or manual entry as alternatives
+- **Multiple Barcode Matches**: Present top candidate with confidence score; allow user to select or reject
 - **Multiple Copies**: Support quantity tracking per item; differentiate by condition/variant when needed
 - **Mixed Condition**: Handle records with significantly different media vs sleeve grades; support detailed defect notes
 - **Foreign Pressings**: Support international catalog numbers, matrix formats, and multi-currency purchase tracking

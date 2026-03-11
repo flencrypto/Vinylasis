@@ -7,6 +7,7 @@ import { ItemDetailDialog } from '@/components/ItemDetailDialog'
 import { ExportGradedItemsDialog } from '@/components/ExportGradedItemsDialog'
 import { MarketTrendsWidget } from '@/components/MarketTrendsWidget'
 import { TrendAlertsDialog } from '@/components/TrendAlertsDialog'
+import QuickActionsBar from '@/components/QuickActionsBar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ import { calculateCollectionValue, formatCurrency } from '@/lib/helpers'
 import { TrendIndicator } from './TrendIndicator'
 import { generateTrendAlerts, getTrendAlertSummary } from '@/lib/trend-monitoring'
 import { toast } from 'sonner'
+import { BarcodeScanResult } from './BarcodeScannerWidget'
 
 type SortOption = 'recent' | 'artist' | 'year' | 'value' | 'grade'
 
@@ -211,8 +213,16 @@ export default function CollectionView() {
     }
   }
 
+  const handleBarcodeScanned = (result: BarcodeScanResult) => {
+    toast.success(`Barcode scanned! Opening add dialog...`)
+    setAddDialogOpen(true)
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="pb-6 space-y-0">
+      <QuickActionsBar onBarcodeScanned={handleBarcodeScanned} />
+      
+      <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 bg-gradient-to-br from-card to-card/50 border-border">
           <div className="text-sm text-muted-foreground mb-1">Total Items</div>
@@ -489,6 +499,7 @@ export default function CollectionView() {
         onDismissAll={handleDismissAllAlerts}
         onViewItem={handleViewItemFromAlert}
       />
+      </div>
     </div>
   )
 }
