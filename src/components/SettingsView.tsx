@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
-import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap, Lightning, Database, CloudArrowUp } from '@phosphor-icons/react'
+import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap, Lightning, Database, CloudArrowUp, TestTube } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { testDiscogsConnection } from '@/lib/marketplace-discogs'
 import { uploadImageToImgBB } from '@/lib/imgbb-service'
+import { DiscogsTestDialog } from '@/components/DiscogsTestDialog'
 
 interface APIKeys {
   openaiKey: string
@@ -65,6 +66,7 @@ export default function SettingsView() {
 
   const [testingDiscogs, setTestingDiscogs] = useState(false)
   const [testingImgBB, setTestingImgBB] = useState(false)
+  const [showDiscogsTestDialog, setShowDiscogsTestDialog] = useState(false)
 
   const handleKeyChange = (key: keyof APIKeys, value: string) => {
     setApiKeys((current = {
@@ -291,10 +293,22 @@ export default function SettingsView() {
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-slate-500 flex items-start gap-1">
-                  <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  Generate a personal access token from <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Discogs Developer Settings</a>. This enables real pressing identification with the Discogs database.
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-slate-500 flex items-start gap-1 flex-1">
+                    <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                    Generate a personal access token from <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Discogs Developer Settings</a>. This enables real pressing identification with the Discogs database.
+                  </p>
+                  <Button
+                    onClick={() => setShowDiscogsTestDialog(true)}
+                    disabled={!apiKeys?.discogsUserToken}
+                    variant="ghost"
+                    size="sm"
+                    className="text-accent hover:text-accent-foreground hover:bg-accent/20 gap-2 shrink-0"
+                  >
+                    <TestTube className="w-4 h-4" />
+                    Advanced Test
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -664,6 +678,12 @@ export default function SettingsView() {
           </CardContent>
         </Card>
       </div>
+
+      <DiscogsTestDialog
+        open={showDiscogsTestDialog}
+        onOpenChange={setShowDiscogsTestDialog}
+        userToken={apiKeys?.discogsUserToken || ''}
+      />
     </div>
   )
 }
