@@ -18,7 +18,8 @@ import {
   Image as ImageIcon,
   CircleNotch,
   Disc,
-  Plus
+  Plus,
+  ChartLine
 } from '@phosphor-icons/react'
 import { analyzeVinylImage } from '@/lib/image-analysis-ai'
 import { identifyPressing } from '@/lib/pressing-identification-ai'
@@ -27,8 +28,10 @@ import { generateListingCopy, generateSEOKeywords, suggestListingPrice } from '@
 import { generatePriceEstimate } from '@/lib/helpers'
 import { toast } from 'sonner'
 import { ListingPreviewDialog } from './ListingPreviewDialog'
+import DynamicPricingDialog from './DynamicPricingDialog'
 import { CollectionItem } from '@/lib/types'
 import { useKV } from '@github/spark/hooks'
+import { AutoPricingRecommendation } from '@/lib/dynamic-pricing-ai'
 
 type AnalysisStep = 'idle' | 'analyzing_images' | 'identifying_pressing' | 'grading_condition' | 'generating_listing' | 'complete'
 
@@ -67,6 +70,8 @@ export default function NewListingView() {
   const [conditionResult, setConditionResult] = useState<ConditionResult | null>(null)
   const [listingContent, setListingContent] = useState<ListingContent | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [showPricingDialog, setShowPricingDialog] = useState(false)
+  const [pricingRecommendation, setPricingRecommendation] = useState<AutoPricingRecommendation | null>(null)
   
   const [manualOverride, setManualOverride] = useState(false)
   const [manualData, setManualData] = useState({
@@ -221,7 +226,21 @@ export default function NewListingView() {
     setListingContent(null)
     setManualOverride(false)
     setShowPreview(false)
+    setPricingRecommendation(null)
     toast.success('Ready for new listing')
+  }
+
+  const handlePriceAccept = (price: number, recommendation: AutoPricingRecommendation) => {
+    setPricingRecommendation(recommendation)
+    setListingContent(prev => prev ? { ...prev, suggestedPrice: price } : null)
+  }
+
+  const handleOpenPricingDialog = () => {
+    if (!analysisResult || !conditionResult) {
+      toast.error('Complete analysis first to get pricing recommendations')
+      return
+    }
+    setShowPricingDialog(true)
   }
 
   const isAnalyzing = !['idle', 'complete'].includes(analysisStep)
@@ -426,10 +445,27 @@ export default function NewListingView() {
                   </div>
 
                   <div>
-                    <Label className="text-xs text-muted-foreground">Suggested Price</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs text-muted-foreground">Suggested Price</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={handleOpenPricingDialog}
+                        className="gap-2 h-7 text-xs"
+                      >
+                        <ChartLine className="w-3 h-3" weight="bold" />
+                        AI Pricing
+                      </Button>
+                    </div>
                     <p className="text-2xl font-bold text-accent">
                       ${listingContent.suggestedPrice.toFixed(2)}
                     </p>
+                    {pricingRecommendation && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Based on {pricingRecommendation.strategy.strategy.replace('_', ' ')} strategy • 
+                        {' '}{Math.round(pricingRecommendation.confidence * 100)}% confidence
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -481,6 +517,37 @@ export default function NewListingView() {
           conditionDetails={conditionResult}
           images={images}
           onReset={handleReset}
+        />
+      )}
+
+      {showPricingDialog && analysisResult && conditionResult && (
+        <DynamicPricingDialog
+          open={showPricingDialog}
+          onOpenChange={setShowPricingDialog}
+          item={{
+            id: `temp-${Date.now()}`,
+            collectionId: 'temp',
+            artistName: analysisResult.artistName,
+            releaseTitle: analysisResult.releaseTitle,
+            format: analysisResult.format,
+            year: analysisResult.year,
+            country: analysisResult.country,
+            catalogNumber: analysisResult.catalogNumber,
+            purchaseCurrency: 'USD',
+            sourceType: 'unknown',
+            quantity: 1,
+            status: 'owned',
+            condition: {
+              mediaGrade: conditionResult.mediaGrade,
+              sleeveGrade: conditionResult.sleeveGrade,
+              gradingStandard: 'Goldmine',
+              gradingNotes: conditionResult.gradingNotes,
+              gradedAt: new Date().toISOString()
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }}
+          onPriceAccept={handlePriceAccept}
         />
       )}
     </div>
