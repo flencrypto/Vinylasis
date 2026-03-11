@@ -399,7 +399,7 @@ export default function SettingsView() {
                 className="w-full"
               />
               <p className="text-xs text-slate-500">
-                Auto-classify photo types (cover, label, runout) when AI confidence exceeds this threshold
+                Auto-classify photo types (cover, label, runout) when AI confidence exceeds this threshold. Higher values = more accurate but fewer auto-classifications. Lower values = more convenience but potential misclassifications.
               </p>
             </div>
 
@@ -445,7 +445,7 @@ export default function SettingsView() {
                 className="w-full"
               />
               <p className="text-xs text-slate-500">
-                Auto-suggest media and sleeve grades when AI confidence exceeds this threshold
+                Auto-suggest media and sleeve grades when AI analysis confidence exceeds this threshold. Set higher for conservative grading (safer for sellers), lower to get suggestions more often (requires manual review).
               </p>
             </div>
 
@@ -468,7 +468,7 @@ export default function SettingsView() {
                 className="w-full"
               />
               <p className="text-xs text-slate-500">
-                Flag marketplace listings as bargains when detection confidence exceeds this threshold
+                Flag marketplace listings as bargains when AI detection confidence exceeds this threshold. Higher values = fewer but more reliable bargain alerts. Lower values = more alerts but may include false positives.
               </p>
             </div>
 

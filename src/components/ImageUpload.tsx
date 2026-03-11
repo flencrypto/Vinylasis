@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ImageType, ItemImage } from '@/lib/types'
-import { Camera, Trash, Image as ImageIcon, CloudArrowUp, CheckCircle, Sparkle, CircleNotch } from '@phosphor-icons/react'
+import { Camera, Trash, Image as ImageIcon, CloudArrowUp, CheckCircle, Sparkle, CircleNotch, Warning } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { uploadImageToImgBB } from '@/lib/imgbb-service'
 import { classifyImage } from '@/lib/openai-vision-service'
+import { useConfidenceThresholds } from '@/hooks/use-confidence-thresholds'
 import { toast } from 'sonner'
 
 interface ImageUploadProps {
@@ -26,6 +27,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
   const [apiKeys] = useKV<{ imgbbKey?: string, openaiKey?: string }>('vinyl-vault-api-keys', {})
   const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set())
   const [detectingTypes, setDetectingTypes] = useState<Set<string>>(new Set())
+  const { checkConfidence, getThreshold, getConfidenceBand } = useConfidenceThresholds()
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -93,18 +95,26 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
 
     try {
       const result = await classifyImage(image.dataUrl)
+      const confidenceBand = getConfidenceBand(result.confidence)
+      const meetsThreshold = checkConfidence('imageClassification', result.confidence)
       
-      onImagesChange(
-        images.map(img =>
-          img.id === image.id 
-            ? { ...img, type: result.imageType as ImageType }
-            : img
+      if (meetsThreshold) {
+        onImagesChange(
+          images.map(img =>
+            img.id === image.id 
+              ? { ...img, type: result.imageType as ImageType }
+              : img
+          )
         )
-      )
-
-      toast.success(`Auto-detected: ${result.imageType.replace('_', ' ')}`, {
-        description: `${Math.round(result.confidence * 100)}% confidence`
-      })
+        toast.success(`Auto-detected: ${result.imageType.replace('_', ' ')}`, {
+          description: `${Math.round(result.confidence * 100)}% confidence`
+        })
+      } else {
+        const threshold = getThreshold('imageClassification')
+        toast.warning(`Low confidence detection (${Math.round(result.confidence * 100)}%)`, {
+          description: `Below ${threshold}% threshold. Please verify manually. Suggested: ${result.imageType.replace('_', ' ')}`
+        })
+      }
     } catch (error) {
       console.error('Image type detection failed:', error)
       toast.error('Auto-detection failed', {

@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ItemImage, MediaGrade, SleeveGrade } from '@/lib/types'
 import { ImageUpload } from '@/components/ImageUpload'
 import { analyzeConditionFromImages } from '@/lib/condition-grading-ai'
+import { useConfidenceThresholds } from '@/hooks/use-confidence-thresholds'
 import { Sparkle, CheckCircle, Warning, Eye, Record, Package } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -42,6 +43,7 @@ export function ConditionGradingDialog({
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState<ConditionResult | null>(null)
+  const { checkConfidence, getThreshold, getConfidenceBand } = useConfidenceThresholds()
 
   const handleAnalyze = async () => {
     if (images.length === 0) {
@@ -62,10 +64,18 @@ export function ConditionGradingDialog({
       setProgress(100)
       setResult(analysisResult)
 
-      if (analysisResult.confidence > 0.6) {
-        toast.success('Condition analysis complete')
+      const threshold = getThreshold('conditionGrading')
+      const meetsThreshold = checkConfidence('conditionGrading', analysisResult.confidence)
+      const band = getConfidenceBand(analysisResult.confidence)
+
+      if (meetsThreshold) {
+        toast.success('Condition analysis complete', {
+          description: `${band.charAt(0).toUpperCase() + band.slice(1)} confidence (${Math.round(analysisResult.confidence * 100)}%)`
+        })
       } else {
-        toast.warning('Low confidence analysis. Consider adding clearer images.')
+        toast.warning(`Low confidence analysis (${Math.round(analysisResult.confidence * 100)}%)`, {
+          description: `Below ${threshold}% threshold. Consider adding clearer images or verifying manually.`
+        })
       }
     } catch (error) {
       console.error('Condition analysis failed:', error)
