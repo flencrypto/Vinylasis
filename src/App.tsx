@@ -18,6 +18,7 @@ import { ValuationDialog } from '@/components/ValuationDialog'
 import { BatchValuationDialog } from '@/components/BatchValuationDialog'
 import { BatchListingDialog } from '@/components/BatchListingDialog'
 import { BatchNFTMintDialog } from '@/components/BatchNFTMintDialog'
+import { WalletConnect } from '@/components/WalletConnect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -26,10 +27,12 @@ import { Plus, Record, TrendUp, Package, ChartLine, MagnifyingGlass, Storefront,
 import { toast } from 'sonner'
 import { scanMarketplaces, MarketplaceConfig, getDefaultMarketplaceConfig, validateMarketplaceConfig } from '@/lib/marketplace-scanner'
 import { analyzeBargainPotential } from '@/lib/bargain-detection-ai'
+import { useWallet } from '@/hooks/use-wallet'
 
 type MainView = 'collection' | 'listings' | 'watchlist' | 'bargains' | 'nfts'
 
 function App() {
+  const { wallet, isConnected } = useWallet()
   const [items, setItems] = useKV<CollectionItem[]>('collection-items', [])
   const [listingDrafts, setListingDrafts] = useKV<ListingDraft[]>('listing-drafts', [])
   const [watchlistItems, setWatchlistItems] = useKV<WatchlistItem[]>('watchlist-items', [])
@@ -259,6 +262,7 @@ function App() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <WalletConnect />
               <Button 
                 variant="outline"
                 onClick={() => {

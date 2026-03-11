@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CollectionItem, MintedNFT, SolanaNetwork } from '@/lib/types'
 import { prepareNFTMetadataFromItem, simulateMintNFT, buildMintedNFTRecord, formatRoyaltyBadge } from '@/lib/solana-service'
 import { getExplorerUrl, getAddressExplorerUrl } from '@/lib/solana-nft'
+import { useWallet } from '@/hooks/use-wallet'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Coins, Sparkle, CheckCircle, Warning, CurrencyDollar, ArrowSquareOut } from '@phosphor-icons/react'
+import { Coins, Sparkle, CheckCircle, Warning, CurrencyDollar, ArrowSquareOut, Wallet } from '@phosphor-icons/react'
 
 interface MintNFTDialogProps {
   open: boolean
@@ -20,13 +21,15 @@ interface MintNFTDialogProps {
 }
 
 export function MintNFTDialog({ open, onOpenChange, item, onMintComplete }: MintNFTDialogProps) {
-  const [walletAddress, setWalletAddress] = useState('')
+  const { wallet, isConnected } = useWallet()
   const [network, setNetwork] = useState<SolanaNetwork>('devnet')
   const [royaltyBasisPoints, setRoyaltyBasisPoints] = useState(1000)
   const [isMinting, setIsMinting] = useState(false)
   const [mintSuccess, setMintSuccess] = useState(false)
   const [mintError, setMintError] = useState<string | null>(null)
   const [mintedNFT, setMintedNFT] = useState<MintedNFT | null>(null)
+
+  const walletAddress = wallet?.publicKey || ''
 
   const handleMint = async () => {
     if (!item || !walletAddress) return
@@ -63,7 +66,6 @@ export function MintNFTDialog({ open, onOpenChange, item, onMintComplete }: Mint
     if (!isMinting) {
       onOpenChange(false)
       setTimeout(() => {
-        setWalletAddress('')
         setMintSuccess(false)
         setMintError(null)
         setMintedNFT(null)
@@ -122,19 +124,28 @@ export function MintNFTDialog({ open, onOpenChange, item, onMintComplete }: Mint
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="wallet-address">Wallet Address *</Label>
-                <Input
-                  id="wallet-address"
-                  placeholder="Enter your Solana wallet address"
-                  value={walletAddress}
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  The NFT will be minted to this address. Make sure you control this wallet.
-                </p>
-              </div>
+              {!isConnected ? (
+                <Alert>
+                  <Wallet size={20} />
+                  <AlertDescription className="ml-2">
+                    Please connect your Solana wallet from the header to mint NFTs. The NFT will be minted directly to your connected wallet.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Connected Wallet</Label>
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border">
+                    <Wallet size={18} className="text-accent" />
+                    <span className="font-mono text-sm flex-1">{walletAddress.slice(0, 8)}...{walletAddress.slice(-8)}</span>
+                    <Badge variant="outline" className="bg-accent/10 text-accent border-accent/30">
+                      {wallet?.walletType || 'Connected'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    The NFT will be minted to this address on the selected network.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="network">Network</Label>
@@ -258,7 +269,7 @@ export function MintNFTDialog({ open, onOpenChange, item, onMintComplete }: Mint
               <Button variant="outline" onClick={handleClose} disabled={isMinting}>
                 Cancel
               </Button>
-              <Button onClick={handleMint} disabled={!walletAddress || isMinting} className="gap-2">
+              <Button onClick={handleMint} disabled={!isConnected || !walletAddress || isMinting} className="gap-2">
                 {isMinting ? (
                   <>
                     <Sparkle size={18} className="animate-spin" />
@@ -267,7 +278,7 @@ export function MintNFTDialog({ open, onOpenChange, item, onMintComplete }: Mint
                 ) : (
                   <>
                     <Coins size={18} weight="fill" />
-                    Mint NFT
+                    {isConnected ? 'Mint NFT' : 'Connect Wallet First'}
                   </>
                 )}
               </Button>
