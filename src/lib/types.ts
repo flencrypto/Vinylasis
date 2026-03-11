@@ -310,3 +310,24 @@ export interface NFTTransaction {
 }
 
 export type SolanaNetwork = 'mainnet-beta' | 'devnet' | 'testnet'
+
+export type TrendAlertType = 'significant_gain' | 'significant_loss' | 'rapid_increase' | 'rapid_decrease' | 'milestone_reached'
+export type TrendAlertSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export interface TrendAlert {
+  id: string
+  itemId: string
+  itemTitle: string
+  artistName: string
+  type: TrendAlertType
+  severity: TrendAlertSeverity
+  message: string
+  previousValue: number
+  currentValue: number
+  changeAmount: number
+  changePercent: number
+  currency: string
+  createdAt: string
+  read: boolean
+  dismissed: boolean
+}

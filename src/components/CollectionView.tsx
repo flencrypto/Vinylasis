@@ -1,27 +1,33 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { CollectionItem, ItemStatus, Format, MediaGrade } from '@/lib/types'
+import { CollectionItem, ItemStatus, Format, MediaGrade, TrendAlert } from '@/lib/types'
 import { ItemCard } from '@/components/ItemCard'
 import { AddItemDialog } from '@/components/AddItemDialog'
 import { ItemDetailDialog } from '@/components/ItemDetailDialog'
 import { ExportGradedItemsDialog } from '@/components/ExportGradedItemsDialog'
 import { MarketTrendsWidget } from '@/components/MarketTrendsWidget'
+import { TrendAlertsDialog } from '@/components/TrendAlertsDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Plus, MagnifyingGlass, FunnelSimple, SortAscending, Disc, Export } from '@phosphor-icons/react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Plus, MagnifyingGlass, FunnelSimple, SortAscending, Disc, Export, Bell, TrendUp, TrendDown, Lightning } from '@phosphor-icons/react'
 import { calculateCollectionValue, formatCurrency } from '@/lib/helpers'
 import { TrendIndicator } from './TrendIndicator'
+import { generateTrendAlerts, getTrendAlertSummary } from '@/lib/trend-monitoring'
+import { toast } from 'sonner'
 
 type SortOption = 'recent' | 'artist' | 'year' | 'value' | 'grade'
 
 export default function CollectionView() {
   const [items, setItems] = useKV<CollectionItem[]>('vinyl-vault-collection', [])
+  const [trendAlerts, setTrendAlerts] = useKV<TrendAlert[]>('vinyl-vault-trend-alerts', [])
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [alertsDialogOpen, setAlertsDialogOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<CollectionItem | null>(null)
   
   const [searchQuery, setSearchQuery] = useState('')
@@ -29,6 +35,23 @@ export default function CollectionView() {
   const [formatFilter, setFormatFilter] = useState<Format | 'all'>('all')
   const [gradeFilter, setGradeFilter] = useState<MediaGrade | 'all'>('all')
   const [sortBy, setSortBy] = useState<SortOption>('recent')
+
+  useEffect(() => {
+    const newAlerts = generateTrendAlerts(items || [], trendAlerts || [])
+    if (newAlerts.length > 0) {
+      setTrendAlerts((current) => [...newAlerts, ...(current || [])])
+      
+      newAlerts.forEach(alert => {
+        if (alert.severity === 'critical' || alert.severity === 'high') {
+          const icon = alert.changeAmount > 0 ? '📈' : '📉'
+          toast(alert.message, {
+            icon,
+            duration: 5000,
+          })
+        }
+      })
+    }
+  }, [items])
 
   const handleAddItem = (newItem: CollectionItem) => {
     setItems((current) => [newItem, ...(current || [])])
@@ -153,6 +176,41 @@ export default function CollectionView() {
     return count
   }, [statusFilter, formatFilter, gradeFilter])
 
+  const alertSummary = useMemo(() => {
+    return getTrendAlertSummary(trendAlerts || [])
+  }, [trendAlerts])
+
+  const handleMarkAlertAsRead = (alertId: string) => {
+    setTrendAlerts((current) =>
+      (current || []).map((alert) =>
+        alert.id === alertId ? { ...alert, read: true } : alert
+      )
+    )
+  }
+
+  const handleDismissAlert = (alertId: string) => {
+    setTrendAlerts((current) =>
+      (current || []).map((alert) =>
+        alert.id === alertId ? { ...alert, dismissed: true } : alert
+      )
+    )
+  }
+
+  const handleDismissAllAlerts = () => {
+    setTrendAlerts((current) =>
+      (current || []).map((alert) => ({ ...alert, dismissed: true }))
+    )
+  }
+
+  const handleViewItemFromAlert = (itemId: string) => {
+    const item = items?.find((i) => i.id === itemId)
+    if (item) {
+      setSelectedItem(item)
+      setDetailDialogOpen(true)
+      setAlertsDialogOpen(false)
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -196,6 +254,47 @@ export default function CollectionView() {
         </Card>
       </div>
 
+      {alertSummary.unread > 0 && (
+        <Alert className="border-accent/50 bg-accent/10">
+          <Bell className="h-5 w-5 text-accent" weight="fill" />
+          <AlertDescription className="ml-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-semibold">
+                  {alertSummary.unread} new trend {alertSummary.unread === 1 ? 'alert' : 'alerts'}
+                </span>
+                {alertSummary.critical > 0 && (
+                  <Badge variant="outline" className="bg-red-500/20 text-red-500 border-red-500/30">
+                    <Lightning size={12} weight="fill" className="mr-1" />
+                    {alertSummary.critical} Critical
+                  </Badge>
+                )}
+                {alertSummary.gains > 0 && (
+                  <Badge variant="outline" className="bg-green-500/20 text-green-500 border-green-500/30">
+                    <TrendUp size={12} weight="bold" className="mr-1" />
+                    {alertSummary.gains} Gains
+                  </Badge>
+                )}
+                {alertSummary.losses > 0 && (
+                  <Badge variant="outline" className="bg-red-500/20 text-red-500 border-red-500/30">
+                    <TrendDown size={12} weight="bold" className="mr-1" />
+                    {alertSummary.losses} Losses
+                  </Badge>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAlertsDialogOpen(true)}
+                className="gap-2 shrink-0"
+              >
+                View Alerts
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -229,6 +328,20 @@ export default function CollectionView() {
         >
           <Export size={20} />
           <span className="hidden sm:inline">Export</span>
+        </Button>
+
+        <Button 
+          variant="outline" 
+          onClick={() => setAlertsDialogOpen(true)} 
+          className="gap-2 relative"
+        >
+          <Bell size={20} weight={alertSummary.unread > 0 ? 'fill' : 'regular'} />
+          <span className="hidden sm:inline">Alerts</span>
+          {alertSummary.unread > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full text-xs flex items-center justify-center font-bold">
+              {alertSummary.unread > 9 ? '9+' : alertSummary.unread}
+            </span>
+          )}
         </Button>
 
         <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
@@ -365,6 +478,16 @@ export default function CollectionView() {
         open={exportDialogOpen}
         onOpenChange={setExportDialogOpen}
         items={items || []}
+      />
+
+      <TrendAlertsDialog
+        open={alertsDialogOpen}
+        onOpenChange={setAlertsDialogOpen}
+        alerts={trendAlerts || []}
+        onMarkAsRead={handleMarkAlertAsRead}
+        onDismiss={handleDismissAlert}
+        onDismissAll={handleDismissAllAlerts}
+        onViewItem={handleViewItemFromAlert}
       />
     </div>
   )
