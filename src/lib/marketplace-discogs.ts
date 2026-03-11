@@ -226,19 +226,57 @@ export async function getDiscogsReleaseInfo(releaseId: number, config: DiscogsAp
 }
 
 export async function testDiscogsConnection(config: DiscogsApiConfig): Promise<{ success: boolean; message: string; count?: number }> {
+  if (!config.userToken) {
+    return {
+      success: false,
+      message: 'No Personal Access Token provided. Please add your Discogs token in Settings.',
+    }
+  }
+
   try {
-    const listings = await searchDiscogsMarketplace(
-      {
-        query: 'vinyl',
-        per_page: 1,
-      },
-      config
-    )
+    const headers: HeadersInit = {
+      'User-Agent': 'VinylVault/1.0',
+      'Authorization': `Discogs token=${config.userToken}`,
+    }
+
+    const response = await fetch('https://api.discogs.com/database/search?q=vinyl&type=release&per_page=1', {
+      headers,
+    })
+
+    if (!response.ok) {
+      let errorText = ''
+      try {
+        const errorData = await response.json()
+        errorText = errorData.message || JSON.stringify(errorData)
+      } catch {
+        errorText = await response.text()
+      }
+
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: `Authentication failed (401). Your Personal Access Token may be invalid. Please regenerate it at discogs.com/settings/developers and update it in Settings.`,
+        }
+      } else if (response.status === 404) {
+        return {
+          success: false,
+          message: `Endpoint not found (404). Error: ${errorText}`,
+        }
+      } else {
+        return {
+          success: false,
+          message: `Discogs API error: ${response.status} - ${errorText}`,
+        }
+      }
+    }
+
+    const data = await response.json()
+    const resultCount = data.results?.length || 0
     
     return {
       success: true,
-      message: `Discogs API connected successfully. Found ${listings.length} test listing(s).`,
-      count: listings.length,
+      message: `✓ Connected successfully! Found ${resultCount} test result(s). Your Discogs API is working properly.`,
+      count: resultCount,
     }
   } catch (error) {
     return {

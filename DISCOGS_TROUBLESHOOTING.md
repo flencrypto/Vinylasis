@@ -60,7 +60,7 @@ VinylVault uses **Personal Access Tokens**, not OAuth.
 3. Find "Discogs API" section
 4. Enter your Personal Access Token
 5. Click **Test** button
-6. Should see: "Discogs API connected! Found 1 test listing(s)."
+6. Should see: "✓ Connected successfully! Found 1 test result(s). Your Discogs API is working properly."
 
 ### Advanced Test (Database Search)
 
@@ -146,7 +146,7 @@ The token looks like: `AbCdEfGhIjKlMnOpQrStUvWxYz123456789ABCDE`
 ### ✅ Working Configuration
 ```
 Personal Access Token: ✓ (valid token pasted)
-Test Result: "Discogs API connected! Found 1 test listing(s)."
+Test Result: "✓ Connected successfully! Found 1 test result(s). Your Discogs API is working properly."
 ```
 
 ### ❌ Broken Configuration
@@ -159,21 +159,22 @@ Test Result: "404 - The requested resource was not found"
 
 ## Technical Details
 
-**API Endpoint Used:**
+**API Endpoint Used for Testing:**
 ```
-GET https://api.discogs.com/marketplace/search?query=vinyl&per_page=1
+GET https://api.discogs.com/database/search?q=vinyl&type=release&per_page=1
 ```
 
 **Authentication Header:**
 ```
 Authorization: Discogs token=YOUR_TOKEN_HERE
+User-Agent: VinylVault/1.0
 ```
 
 **Expected Response:**
 ```json
 {
-  "pagination": { "items": 100, "page": 1, "pages": 100 },
-  "listings": [ { "id": 123456, "release": {...}, "price": {...} } ]
+  "pagination": { "items": 5000, "page": 1, "pages": 5000, "per_page": 1 },
+  "results": [ { "id": 123456, "type": "release", "title": "...", ... } ]
 }
 ```
 
