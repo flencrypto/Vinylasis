@@ -194,12 +194,13 @@ export function generateEbayHTMLDescription(
   const imagesWithUrls = hostedImages.filter(img => img.imgbbUrl || img.imgbbDisplayUrl)
   
   const imageGalleryHTML = imagesWithUrls.length > 0 ? `
-    <div style="margin: 20px 0; text-align: center;">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; max-width: 800px; margin: 0 auto;">
-        ${imagesWithUrls.map(img => `
-          <div style="border: 1px solid #e0e0e0; padding: 5px; background: #fff;">
-            <img src="${img.imgbbDisplayUrl || img.imgbbUrl}" alt="${img.type.replace('_', ' ')}" style="width: 100%; height: auto; display: block;" />
-            <p style="margin: 5px 0 0 0; font-size: 11px; color: #666; text-transform: capitalize;">${img.type.replace('_', ' ')}</p>
+    <div style="margin: 30px 0; text-align: center; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+      <h3 style="margin: 0 0 20px 0; color: #222; font-size: 20px; font-weight: 600; text-align: center;">📸 Photo Gallery</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; max-width: 900px; margin: 0 auto;">
+        ${imagesWithUrls.map((img, idx) => `
+          <div style="border: 2px solid #ddd; border-radius: 8px; padding: 10px; background: #fff; transition: transform 0.2s;">
+            <img src="${img.imgbbDisplayUrl || img.imgbbUrl}" alt="${img.type.replace('_', ' ')} - Image ${idx + 1}" style="width: 100%; height: auto; display: block; border-radius: 4px; max-height: 300px; object-fit: contain;" />
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #666; text-transform: capitalize; font-weight: 500;">${img.type.replace(/_/g, ' ')}</p>
           </div>
         `).join('')}
       </div>
@@ -207,25 +208,25 @@ export function generateEbayHTMLDescription(
   ` : ''
 
   const conditionHTML = `
-    <div style="background: #f9f9f9; border: 2px solid #333; padding: 15px; margin: 20px 0;">
-      <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Condition Details</h3>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 8px; font-weight: bold; width: 40%;">Media Grade:</td>
-          <td style="padding: 8px;">${item.condition.mediaGrade}</td>
+    <div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border: 3px solid #2c3e50; border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 22px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 1px;">🎵 Condition Details</h3>
+      <table style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden;">
+        <tr style="background: #34495e;">
+          <td style="padding: 15px; font-weight: 700; width: 40%; color: #fff; border-bottom: 2px solid #2c3e50;">Media Grade:</td>
+          <td style="padding: 15px; color: #fff; font-weight: 600; border-bottom: 2px solid #2c3e50;">${item.condition.mediaGrade}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Sleeve Grade:</td>
-          <td style="padding: 8px;">${item.condition.sleeveGrade}</td>
+        <tr style="background: #ecf0f1;">
+          <td style="padding: 15px; font-weight: 700; border-bottom: 1px solid #bdc3c7;">Sleeve Grade:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7;">${item.condition.sleeveGrade}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Grading Standard:</td>
-          <td style="padding: 8px;">${item.condition.gradingStandard}</td>
+        <tr style="background: #fff;">
+          <td style="padding: 15px; font-weight: 700; border-bottom: 1px solid #bdc3c7;">Grading Standard:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7;">${item.condition.gradingStandard}</td>
         </tr>
         ${item.condition.gradingNotes ? `
-        <tr>
-          <td style="padding: 8px; font-weight: bold; vertical-align: top;">Notes:</td>
-          <td style="padding: 8px;">${item.condition.gradingNotes}</td>
+        <tr style="background: #ecf0f1;">
+          <td style="padding: 15px; font-weight: 700; vertical-align: top;">Grading Notes:</td>
+          <td style="padding: 15px; line-height: 1.6;">${item.condition.gradingNotes}</td>
         </tr>
         ` : ''}
       </table>
@@ -233,33 +234,33 @@ export function generateEbayHTMLDescription(
   `
 
   const recordDetailsHTML = `
-    <div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin: 20px 0;">
-      <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Record Details</h3>
+    <div style="background: #fff; border: 2px solid #3498db; border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow: 0 4px 6px rgba(52,152,219,0.2);">
+      <h3 style="margin: 0 0 20px 0; color: #3498db; font-size: 22px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 1px;">💿 Record Information</h3>
       <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 8px; font-weight: bold; width: 40%;">Artist:</td>
-          <td style="padding: 8px;">${item.artistName}</td>
+        <tr style="background: #ecf0f1;">
+          <td style="padding: 15px; font-weight: 700; width: 40%; border-bottom: 1px solid #bdc3c7;">Artist:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7; font-size: 16px;">${item.artistName}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Title:</td>
-          <td style="padding: 8px;">${item.releaseTitle}</td>
+        <tr style="background: #fff;">
+          <td style="padding: 15px; font-weight: 700; border-bottom: 1px solid #bdc3c7;">Title:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7; font-size: 16px;">${item.releaseTitle}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Format:</td>
-          <td style="padding: 8px;">${item.format}</td>
+        <tr style="background: #ecf0f1;">
+          <td style="padding: 15px; font-weight: 700; border-bottom: 1px solid #bdc3c7;">Format:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7;">${item.format}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Year:</td>
-          <td style="padding: 8px;">${item.year}</td>
+        <tr style="background: #fff;">
+          <td style="padding: 15px; font-weight: 700; border-bottom: 1px solid #bdc3c7;">Year:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7;">${item.year}</td>
         </tr>
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Country:</td>
-          <td style="padding: 8px;">${item.country}</td>
+        <tr style="background: #ecf0f1;">
+          <td style="padding: 15px; font-weight: 700; border-bottom: 1px solid #bdc3c7;">Country:</td>
+          <td style="padding: 15px; border-bottom: 1px solid #bdc3c7;">${item.country}</td>
         </tr>
         ${item.catalogNumber ? `
-        <tr>
-          <td style="padding: 8px; font-weight: bold;">Catalog Number:</td>
-          <td style="padding: 8px;">${item.catalogNumber}</td>
+        <tr style="background: #fff;">
+          <td style="padding: 15px; font-weight: 700;">Catalog Number:</td>
+          <td style="padding: 15px; font-family: 'Courier New', monospace; background: #f8f9fa; border-radius: 4px;">${item.catalogNumber}</td>
         </tr>
         ` : ''}
       </table>
@@ -267,29 +268,60 @@ export function generateEbayHTMLDescription(
   `
 
   const fullHTML = `
-    <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #333;">
-      <h2 style="color: #333; margin-bottom: 20px; font-size: 24px; border-bottom: 3px solid #333; padding-bottom: 10px;">
-        ${item.artistName} - ${item.releaseTitle}
-      </h2>
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 30px 20px; color: #2c3e50; background: #fff; line-height: 1.8;">
+      
+      <div style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 40px 20px; border-radius: 12px; margin-bottom: 40px; box-shadow: 0 6px 12px rgba(0,0,0,0.15);">
+        <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
+          ${item.artistName}
+        </h1>
+        <h2 style="margin: 0; font-size: 24px; font-weight: 400; opacity: 0.95;">
+          ${item.releaseTitle}
+        </h2>
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.3);">
+          <span style="display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 14px; margin: 0 5px;">
+            ${item.format}
+          </span>
+          <span style="display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 14px; margin: 0 5px;">
+            ${item.year}
+          </span>
+          <span style="display: inline-block; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 14px; margin: 0 5px;">
+            ${item.country}
+          </span>
+        </div>
+      </div>
       
       ${imageGalleryHTML}
       
-      <div style="margin: 20px 0; line-height: 1.6;">
-        ${description.split('\n').map(para => para.trim() ? `<p style="margin: 10px 0;">${para}</p>` : '').join('')}
+      <div style="margin: 40px 0; padding: 30px; background: #f8f9fa; border-left: 5px solid #3498db; border-radius: 8px;">
+        <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 20px; font-weight: 600;">📝 Description</h3>
+        ${description.split('\n\n').map(para => para.trim() ? `<p style="margin: 15px 0; font-size: 15px; line-height: 1.8; color: #34495e;">${para}</p>` : '').join('')}
       </div>
       
       ${recordDetailsHTML}
       
       ${conditionHTML}
       
-      <div style="background: #fffbf0; border: 1px solid #ffd700; padding: 15px; margin: 20px 0;">
-        <h3 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">📦 Shipping Information</h3>
-        <p style="margin: 5px 0; font-size: 13px;">All vinyl records are shipped with care using proper record mailers and protective packaging to ensure safe delivery.</p>
+      <div style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); border: 2px solid #e17055; border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 18px; font-weight: 700; text-align: center;">📦 Shipping & Handling</h3>
+        <p style="margin: 10px 0; font-size: 15px; text-align: center; color: #2c3e50; line-height: 1.6;">
+          <strong>All vinyl records are carefully packaged</strong> using professional record mailers, protective sleeves, and cardboard stiffeners to ensure safe delivery. We ship within 1-2 business days of receiving payment.
+        </p>
       </div>
       
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-        <p style="color: #666; font-size: 12px;">Thank you for your interest in this record. Please feel free to ask any questions!</p>
+      <div style="text-align: center; margin-top: 50px; padding-top: 30px; border-top: 3px solid #ecf0f1;">
+        <p style="color: #7f8c8d; font-size: 14px; margin: 5px 0;">
+          ✨ Thank you for your interest in this record! ✨
+        </p>
+        <p style="color: #95a5a6; font-size: 13px; margin: 10px 0;">
+          Please don't hesitate to ask if you have any questions.
+        </p>
+        <div style="margin-top: 20px; padding: 15px; background: #ecf0f1; border-radius: 8px; display: inline-block;">
+          <p style="margin: 0; color: #2c3e50; font-weight: 600; font-size: 14px;">
+            🎧 Happy collecting! 🎧
+          </p>
+        </div>
       </div>
+      
     </div>
   `
 

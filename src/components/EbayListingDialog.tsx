@@ -9,27 +9,40 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { EbayListingPackage } from '@/lib/listing-ai'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ItemImage } from '@/lib/types'
+import ImgBBUploadDialog from './ImgBBUploadDialog'
 
 interface EbayListingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   listingPackage: EbayListingPackage
-  onUploadImages?: () => void
+  images?: ItemImage[]
+  onImagesUploaded?: (uploadedImages: ItemImage[]) => void
 }
 
 export default function EbayListingDialog({
   open,
   onOpenChange,
   listingPackage,
-  onUploadImages
+  images = [],
+  onImagesUploaded
 }: EbayListingDialogProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text)
     setCopiedField(fieldName)
     toast.success(`${fieldName} copied to clipboard`)
     setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const handleUploadComplete = (uploadedImages: ItemImage[]) => {
+    setShowUploadDialog(false)
+    onImagesUploaded?.(uploadedImages)
+    toast.success('Images uploaded!', {
+      description: 'HTML description has been updated with hosted images'
+    })
   }
 
   return (
@@ -54,16 +67,14 @@ export default function EbayListingDialog({
                     <span>
                       {listingPackage.missingImageCount} image{listingPackage.missingImageCount !== 1 ? 's' : ''} need to be uploaded to imgBB before publishing to eBay
                     </span>
-                    {onUploadImages && (
-                      <Button
-                        size="sm"
-                        onClick={onUploadImages}
-                        className="gap-2 ml-4"
-                      >
-                        <CloudArrowUp className="w-4 h-4" />
-                        Upload Images
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => setShowUploadDialog(true)}
+                      className="gap-2 ml-4"
+                    >
+                      <CloudArrowUp className="w-4 h-4" />
+                      Upload Images
+                    </Button>
                   </div>
                 </AlertDescription>
               </Alert>
@@ -330,6 +341,15 @@ export default function EbayListingDialog({
           </Button>
         </div>
       </DialogContent>
+
+      {showUploadDialog && images.length > 0 && (
+        <ImgBBUploadDialog
+          open={showUploadDialog}
+          onOpenChange={setShowUploadDialog}
+          images={images}
+          onUploadComplete={handleUploadComplete}
+        />
+      )}
     </Dialog>
   )
 }

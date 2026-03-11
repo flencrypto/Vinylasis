@@ -49,6 +49,7 @@ export function ListingPreviewDialog({
   const [ebayListingPackage, setEbayListingPackage] = useState<EbayListingPackage | null>(null)
   const [showEbayDialog, setShowEbayDialog] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [currentImages, setCurrentImages] = useState<ItemImage[]>(images)
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text)
@@ -85,7 +86,7 @@ export function ListingPreviewDialog({
         updatedAt: new Date().toISOString()
       }
 
-      const ebayPackage = await generateEbayListingPackage(itemForListing, images)
+      const ebayPackage = await generateEbayListingPackage(itemForListing, currentImages)
       setEbayListingPackage(ebayPackage)
       setShowEbayDialog(true)
       
@@ -99,6 +100,47 @@ export function ListingPreviewDialog({
       toast.error('Failed to generate eBay listing')
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleImagesUploaded = async (uploadedImages: ItemImage[]) => {
+    setCurrentImages((prev) => {
+      const imageMap = new Map(uploadedImages.map(img => [img.id, img]))
+      return prev.map(img => imageMap.get(img.id) || img)
+    })
+
+    if (ebayListingPackage) {
+      const itemForListing = {
+        id: `temp-${Date.now()}`,
+        collectionId: 'temp',
+        artistName: recordDetails.artistName,
+        releaseTitle: recordDetails.releaseTitle,
+        format: recordDetails.format as any,
+        year: recordDetails.year,
+        country: recordDetails.country,
+        catalogNumber: recordDetails.catalogNumber,
+        purchaseCurrency: 'USD',
+        sourceType: 'unknown' as any,
+        quantity: 1,
+        status: 'owned' as any,
+        condition: {
+          mediaGrade: conditionDetails.mediaGrade,
+          sleeveGrade: conditionDetails.sleeveGrade,
+          gradingStandard: 'Goldmine' as any,
+          gradingNotes: listingContent.conditionSummary,
+          gradedAt: new Date().toISOString()
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      const updatedImageList = currentImages.map(img => {
+        const uploaded = uploadedImages.find(u => u.id === img.id)
+        return uploaded || img
+      })
+
+      const updatedPackage = await generateEbayListingPackage(itemForListing, updatedImageList)
+      setEbayListingPackage(updatedPackage)
     }
   }
 
@@ -300,6 +342,8 @@ export function ListingPreviewDialog({
           open={showEbayDialog}
           onOpenChange={setShowEbayDialog}
           listingPackage={ebayListingPackage}
+          images={currentImages}
+          onImagesUploaded={handleImagesUploaded}
         />
       )}
     </Dialog>
