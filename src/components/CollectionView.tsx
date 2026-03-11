@@ -222,43 +222,43 @@ export default function CollectionView() {
     <div className="pb-6 space-y-0">
       <QuickActionsBar onBarcodeScanned={handleBarcodeScanned} />
       
-      <div className="p-6 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-card to-card/50 border-border">
-          <div className="text-sm text-muted-foreground mb-1">Total Items</div>
-          <div className="text-3xl font-bold">{stats.totalItems}</div>
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4 bg-gradient-to-br from-card to-card/50 border-border">
+            <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Items</div>
+          <div className="text-2xl sm:text-3xl font-bold">{stats.totalItems}</div>
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-card to-card/50 border-border">
-          <div className="text-sm text-muted-foreground mb-1">In Collection</div>
-          <div className="text-3xl font-bold text-accent">{stats.ownedItems}</div>
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-card to-card/50 border-border">
+          <div className="text-xs sm:text-sm text-muted-foreground mb-1">In Collection</div>
+          <div className="text-2xl sm:text-3xl font-bold text-accent">{stats.ownedItems}</div>
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-card to-card/50 border-border">
-          <div className="text-sm text-muted-foreground mb-1">Total Value</div>
-          <div className="text-3xl font-bold">{formatCurrency(stats.totalValue)}</div>
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-card to-card/50 border-border">
+          <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Value</div>
+          <div className="text-xl sm:text-3xl font-bold">{formatCurrency(stats.totalValue)}</div>
           {stats.avgTrend !== 0 && stats.itemsWithTrends > 0 && (
             <div className="flex items-center gap-2 mt-2">
               <TrendIndicator value={stats.avgTrend} showIcon showValue size="sm" />
-              <span className="text-xs text-muted-foreground">avg. trend</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">avg. trend</span>
             </div>
           )}
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-card to-card/50 border-border">
-          <div className="text-sm text-muted-foreground mb-1">Market Trends</div>
-          <div className="flex items-center gap-4 mt-2">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-card to-card/50 border-border">
+          <div className="text-xs sm:text-sm text-muted-foreground mb-1">Market Trends</div>
+          <div className="flex items-center gap-2 sm:gap-4 mt-2">
             <div className="flex items-center gap-1">
               <TrendIndicator value={10} showIcon={false} className="text-green-500" />
-              <span className="text-2xl font-bold text-green-500">{stats.risingCount}</span>
+              <span className="text-lg sm:text-2xl font-bold text-green-500">{stats.risingCount}</span>
             </div>
             <div className="text-muted-foreground">|</div>
             <div className="flex items-center gap-1">
               <TrendIndicator value={-10} showIcon={false} className="text-red-500" />
-              <span className="text-2xl font-bold text-red-500">{stats.fallingCount}</span>
+              <span className="text-lg sm:text-2xl font-bold text-red-500">{stats.fallingCount}</span>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
+          <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">
             rising / falling values
           </div>
         </Card>
@@ -266,28 +266,28 @@ export default function CollectionView() {
 
       {alertSummary.unread > 0 && (
         <Alert className="border-accent/50 bg-accent/10">
-          <Bell className="h-5 w-5 text-accent" weight="fill" />
+          <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-accent" weight="fill" />
           <AlertDescription className="ml-2">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-semibold">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-sm">
                   {alertSummary.unread} new trend {alertSummary.unread === 1 ? 'alert' : 'alerts'}
                 </span>
                 {alertSummary.critical > 0 && (
-                  <Badge variant="outline" className="bg-red-500/20 text-red-500 border-red-500/30">
-                    <Lightning size={12} weight="fill" className="mr-1" />
+                  <Badge variant="outline" className="bg-red-500/20 text-red-500 border-red-500/30 text-xs">
+                    <Lightning size={10} weight="fill" className="mr-1" />
                     {alertSummary.critical} Critical
                   </Badge>
                 )}
                 {alertSummary.gains > 0 && (
-                  <Badge variant="outline" className="bg-green-500/20 text-green-500 border-green-500/30">
-                    <TrendUp size={12} weight="bold" className="mr-1" />
+                  <Badge variant="outline" className="bg-green-500/20 text-green-500 border-green-500/30 text-xs">
+                    <TrendUp size={10} weight="bold" className="mr-1" />
                     {alertSummary.gains} Gains
                   </Badge>
                 )}
                 {alertSummary.losses > 0 && (
-                  <Badge variant="outline" className="bg-red-500/20 text-red-500 border-red-500/30">
-                    <TrendDown size={12} weight="bold" className="mr-1" />
+                  <Badge variant="outline" className="bg-red-500/20 text-red-500 border-red-500/30 text-xs">
+                    <TrendDown size={10} weight="bold" className="mr-1" />
                     {alertSummary.losses} Losses
                   </Badge>
                 )}
@@ -296,7 +296,7 @@ export default function CollectionView() {
                 variant="outline"
                 size="sm"
                 onClick={() => setAlertsDialogOpen(true)}
-                className="gap-2 shrink-0"
+                className="gap-1.5 shrink-0 text-xs"
               >
                 View Alerts
               </Button>
@@ -305,98 +305,100 @@ export default function CollectionView() {
         </Alert>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-2">
         <div className="relative flex-1">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
           <Input
             placeholder="Search by artist, title, or catalog number..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-10"
           />
         </div>
         
-        <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SortAscending className="mr-2" size={18} />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Most Recent</SelectItem>
-            <SelectItem value="artist">Artist A-Z</SelectItem>
-            <SelectItem value="year">Year (Newest)</SelectItem>
-            <SelectItem value="value">Value (Highest)</SelectItem>
-            <SelectItem value="grade">Grade (Best)</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+            <SelectTrigger className="w-full sm:w-auto sm:min-w-[180px] h-10">
+              <SortAscending className="mr-2" size={16} />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Most Recent</SelectItem>
+              <SelectItem value="artist">Artist A-Z</SelectItem>
+              <SelectItem value="year">Year (Newest)</SelectItem>
+              <SelectItem value="value">Value (Highest)</SelectItem>
+              <SelectItem value="grade">Grade (Best)</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Button 
-          variant="outline" 
-          onClick={() => setExportDialogOpen(true)} 
-          className="gap-2"
-          disabled={(items || []).filter(item => item.condition?.mediaGrade && item.condition?.sleeveGrade).length === 0}
-        >
-          <Export size={20} />
-          <span className="hidden sm:inline">Export</span>
-        </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setExportDialogOpen(true)} 
+            className="gap-1.5 flex-1 sm:flex-none h-10"
+            disabled={(items || []).filter(item => item.condition?.mediaGrade && item.condition?.sleeveGrade).length === 0}
+          >
+            <Export size={18} />
+            <span>Export</span>
+          </Button>
 
-        <Button 
-          variant="outline" 
-          onClick={() => setAlertsDialogOpen(true)} 
-          className="gap-2 relative"
-        >
-          <Bell size={20} weight={alertSummary.unread > 0 ? 'fill' : 'regular'} />
-          <span className="hidden sm:inline">Alerts</span>
-          {alertSummary.unread > 0 && (
+          <Button 
+            variant="outline" 
+            onClick={() => setAlertsDialogOpen(true)} 
+            className="gap-1.5 relative flex-1 sm:flex-none h-10"
+          >
+            <Bell size={18} weight={alertSummary.unread > 0 ? 'fill' : 'regular'} />
+            <span>Alerts</span>
+            {alertSummary.unread > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full text-xs flex items-center justify-center font-bold">
               {alertSummary.unread > 9 ? '9+' : alertSummary.unread}
             </span>
           )}
         </Button>
 
-        <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
-          <Plus size={20} weight="bold" />
-          Add Item
+        <Button onClick={() => setAddDialogOpen(true)} className="gap-1.5 flex-1 sm:flex-none h-10">
+          <Plus size={18} weight="bold" />
+          <span>Add Item</span>
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 sm:items-center">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FunnelSimple size={18} />
+          <FunnelSimple size={16} />
           <span>Filters:</span>
         </div>
 
-        <Select value={statusFilter} onValueChange={(value: ItemStatus | 'all') => setStatusFilter(value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="owned">In Collection</SelectItem>
-            <SelectItem value="for_sale">For Sale</SelectItem>
-            <SelectItem value="sold">Sold</SelectItem>
-            <SelectItem value="traded">Traded</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
+          <Select value={statusFilter} onValueChange={(value: ItemStatus | 'all') => setStatusFilter(value)}>
+            <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="owned">In Collection</SelectItem>
+              <SelectItem value="for_sale">For Sale</SelectItem>
+              <SelectItem value="sold">Sold</SelectItem>
+              <SelectItem value="traded">Traded</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={formatFilter} onValueChange={(value: Format | 'all') => setFormatFilter(value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Format" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Formats</SelectItem>
-            <SelectItem value="LP">12" LP</SelectItem>
-            <SelectItem value="7in">7" Single</SelectItem>
-            <SelectItem value="12in">12" Single</SelectItem>
-            <SelectItem value="EP">EP</SelectItem>
-            <SelectItem value="Boxset">Box Set</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={formatFilter} onValueChange={(value: Format | 'all') => setFormatFilter(value)}>
+            <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs">
+              <SelectValue placeholder="Format" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Formats</SelectItem>
+              <SelectItem value="LP">12" LP</SelectItem>
+              <SelectItem value="7in">7" Single</SelectItem>
+              <SelectItem value="12in">12" Single</SelectItem>
+              <SelectItem value="EP">EP</SelectItem>
+              <SelectItem value="Boxset">Box Set</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={gradeFilter} onValueChange={(value: MediaGrade | 'all') => setGradeFilter(value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Grade" />
+          <Select value={gradeFilter} onValueChange={(value: MediaGrade | 'all') => setGradeFilter(value)}>
+            <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs">
+              <SelectValue placeholder="Grade" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Grades</SelectItem>
@@ -408,6 +410,7 @@ export default function CollectionView() {
             <SelectItem value="G">Good</SelectItem>
           </SelectContent>
         </Select>
+        </div>
 
         {activeFiltersCount > 0 && (
           <Button
@@ -418,7 +421,7 @@ export default function CollectionView() {
               setFormatFilter('all')
               setGradeFilter('all')
             }}
-            className="gap-2"
+            className="gap-1.5 text-xs w-full sm:w-auto"
           >
             Clear {activeFiltersCount} {activeFiltersCount === 1 ? 'filter' : 'filters'}
           </Button>
@@ -430,28 +433,28 @@ export default function CollectionView() {
       )}
 
       {filteredAndSortedItems.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {filteredAndSortedItems.map((item) => (
             <ItemCard key={item.id} item={item} onClick={() => handleItemClick(item)} />
           ))}
         </div>
       ) : (items || []).length === 0 ? (
-        <Card className="p-12 text-center border-dashed">
-          <Disc size={64} className="mx-auto mb-4 text-muted-foreground opacity-50" weight="thin" />
-          <h3 className="text-xl font-semibold mb-2">Start Your Collection</h3>
-          <p className="text-muted-foreground mb-6">
+        <Card className="p-8 sm:p-12 text-center border-dashed">
+          <Disc size={48} className="sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground opacity-50" weight="thin" />
+          <h3 className="text-lg sm:text-xl font-semibold mb-2">Start Your Collection</h3>
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             Add your first vinyl record to begin tracking your collection
           </p>
           <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
-            <Plus size={20} weight="bold" />
+            <Plus size={18} weight="bold" />
             Add First Item
           </Button>
         </Card>
       ) : (
-        <Card className="p-12 text-center border-dashed">
-          <div className="text-4xl mb-4">🔍</div>
-          <h3 className="text-xl font-semibold mb-2">No Results Found</h3>
-          <p className="text-muted-foreground mb-6">
+        <Card className="p-8 sm:p-12 text-center border-dashed">
+          <div className="text-3xl sm:text-4xl mb-4">🔍</div>
+          <h3 className="text-lg sm:text-xl font-semibold mb-2">No Results Found</h3>
+          <p className="text-sm sm:text-base text-muted-foreground mb-6">
             Try adjusting your search or filters
           </p>
           <Button

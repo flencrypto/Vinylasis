@@ -94,54 +94,61 @@ export default function BargainsView() {
   const highScoreCount = filteredAndSortedBargains.filter(b => b.bargainScore >= 70).length
 
   return (
-    <div className="p-4 pb-24 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkle className="w-7 h-7 text-accent" weight="fill" />
-            Bargains
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {(bargains || []).length} total • {unviewedCount} unviewed
-          </p>
+    <div className="p-3 sm:p-4 pb-24 space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Sparkle className="w-6 h-6 sm:w-7 sm:h-7 text-accent" weight="fill" />
+              Bargains
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              {(bargains || []).length} total • {unviewedCount} unviewed
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsAgentConfigOpen(true)}
-            className="gap-2 border-slate-700"
+            className="gap-1.5 border-slate-700 text-xs"
           >
-            <Robot size={16} />
-            AI Agent
+            <Robot size={14} />
+            <span className="hidden xs:inline">AI Agent</span>
+            <span className="xs:hidden">Agent</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsScheduleDialogOpen(true)}
-            className="gap-2 border-slate-700"
+            className="gap-1.5 border-slate-700 text-xs"
           >
-            <Clock size={16} />
-            Schedules
+            <Clock size={14} />
+            <span className="hidden xs:inline">Schedules</span>
+            <span className="xs:hidden">Times</span>
           </Button>
           <Button
             variant="default"
             size="sm"
             onClick={() => setIsScanDialogOpen(true)}
-            className="gap-2"
+            className="gap-1.5 text-xs"
           >
-            <MagnifyingGlass size={16} weight="bold" />
-            Scan Markets
+            <MagnifyingGlass size={14} weight="bold" />
+            <span className="hidden xs:inline">Scan Markets</span>
+            <span className="xs:hidden">Scan</span>
           </Button>
           {unviewedCount > 0 && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleMarkAllViewed}
-              className="gap-2"
+              className="gap-1.5 text-xs ml-auto"
             >
-              <Eye size={16} />
-              Mark All Viewed
+              <Eye size={14} />
+              <span className="hidden xs:inline">Mark All Viewed</span>
+              <span className="xs:hidden">Mark All</span>
             </Button>
           )}
         </div>
@@ -162,47 +169,45 @@ export default function BargainsView() {
       )}
 
       <div className="space-y-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search bargains..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+        <div className="relative">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search bargains..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          <Tabs value={filterView} onValueChange={(v) => setFilterView(v as FilterView)} className="flex-shrink-0">
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="all" className="text-xs">
-                All
-                <Badge variant="secondary" className="ml-1 text-[10px] px-1.5">
+        <div className="space-y-2">
+          <Tabs value={filterView} onValueChange={(v) => setFilterView(v as FilterView)}>
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="all" className="text-xs gap-1">
+                <span>All</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
                   {(bargains || []).length}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="unviewed" className="text-xs">
-                <EyeSlash size={14} weight="fill" className="mr-1" />
-                New
+              <TabsTrigger value="unviewed" className="text-xs gap-1">
+                <EyeSlash size={12} weight="fill" />
+                <span>New</span>
                 {unviewedCount > 0 && (
-                  <Badge variant="default" className="ml-1 text-[10px] px-1.5 bg-accent">
+                  <Badge variant="default" className="text-[10px] px-1.5 h-4 bg-accent">
                     {unviewedCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="viewed" className="text-xs">
-                <Eye size={14} weight="fill" className="mr-1" />
-                Viewed
+              <TabsTrigger value="viewed" className="text-xs gap-1">
+                <Eye size={12} weight="fill" />
+                <span>Seen</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-2">
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-[140px] h-9 text-xs">
-                <SortAscending size={14} className="mr-1" />
+              <SelectTrigger className="h-9 text-xs">
+                <SortAscending size={14} className="mr-1 flex-shrink-0" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -214,8 +219,8 @@ export default function BargainsView() {
             </Select>
 
             <Select value={minScore.toString()} onValueChange={(v) => setMinScore(Number(v))}>
-              <SelectTrigger className="w-[130px] h-9 text-xs">
-                <Funnel size={14} className="mr-1" />
+              <SelectTrigger className="h-9 text-xs">
+                <Funnel size={14} className="mr-1 flex-shrink-0" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
