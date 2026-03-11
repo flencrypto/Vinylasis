@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Key, Check, Eye, EyeSlash, Info } from '@phosphor-icons/react'
+import { Slider } from '@/components/ui/slider'
+import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface APIKeys {
@@ -17,6 +18,13 @@ interface APIKeys {
   ebayClientSecret: string
   ebayDevId: string
   imgbbKey: string
+}
+
+interface ConfidenceThresholds {
+  imageClassification: number
+  pressingIdentification: number
+  conditionGrading: number
+  bargainDetection: number
 }
 
 export default function SettingsView() {
@@ -42,6 +50,13 @@ export default function SettingsView() {
 
   const [notificationsEnabled, setNotificationsEnabled] = useKV<boolean>('vinyl-vault-notifications', true)
   const [autoSync, setAutoSync] = useKV<boolean>('vinyl-vault-auto-sync', true)
+  
+  const [confidenceThresholds, setConfidenceThresholds] = useKV<ConfidenceThresholds>('vinyl-vault-confidence-thresholds', {
+    imageClassification: 75,
+    pressingIdentification: 70,
+    conditionGrading: 65,
+    bargainDetection: 80,
+  })
 
   const handleKeyChange = (key: keyof APIKeys, value: string) => {
     setApiKeys((current = {
@@ -63,6 +78,28 @@ export default function SettingsView() {
       ...prev,
       [key]: !prev[key],
     }))
+  }
+
+  const handleThresholdChange = (key: keyof ConfidenceThresholds, value: number[]) => {
+    setConfidenceThresholds((current = {
+      imageClassification: 75,
+      pressingIdentification: 70,
+      conditionGrading: 65,
+      bargainDetection: 80,
+    }) => ({
+      ...current,
+      [key]: value[0],
+    }))
+  }
+
+  const resetThresholds = () => {
+    setConfidenceThresholds({
+      imageClassification: 75,
+      pressingIdentification: 70,
+      conditionGrading: 65,
+      bargainDetection: 80,
+    })
+    toast.success('Confidence thresholds reset to defaults')
   }
 
   const handleSave = () => {
@@ -329,6 +366,115 @@ export default function SettingsView() {
               </Button>
               <Button onClick={clearAllKeys} variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
                 Clear All
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900/50 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Brain className="w-5 h-5" />
+              AI Confidence Thresholds
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Control when auto-detection is trusted and automatically applied
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Image className="w-4 h-4 text-accent" />
+                  <Label className="text-slate-200">Image Classification</Label>
+                </div>
+                <span className="text-sm font-mono text-accent">{confidenceThresholds?.imageClassification || 75}%</span>
+              </div>
+              <Slider
+                value={[confidenceThresholds?.imageClassification || 75]}
+                onValueChange={(value) => handleThresholdChange('imageClassification', value)}
+                min={50}
+                max={95}
+                step={5}
+                className="w-full"
+              />
+              <p className="text-xs text-slate-500">
+                Auto-classify photo types (cover, label, runout) when AI confidence exceeds this threshold
+              </p>
+            </div>
+
+            <Separator className="bg-slate-800" />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Detective className="w-4 h-4 text-accent" />
+                  <Label className="text-slate-200">Pressing Identification</Label>
+                </div>
+                <span className="text-sm font-mono text-accent">{confidenceThresholds?.pressingIdentification || 70}%</span>
+              </div>
+              <Slider
+                value={[confidenceThresholds?.pressingIdentification || 70]}
+                onValueChange={(value) => handleThresholdChange('pressingIdentification', value)}
+                min={50}
+                max={95}
+                step={5}
+                className="w-full"
+              />
+              <p className="text-xs text-slate-500">
+                Auto-match records to releases/pressings when identification confidence exceeds this threshold
+              </p>
+            </div>
+
+            <Separator className="bg-slate-800" />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-accent" />
+                  <Label className="text-slate-200">Condition Grading</Label>
+                </div>
+                <span className="text-sm font-mono text-accent">{confidenceThresholds?.conditionGrading || 65}%</span>
+              </div>
+              <Slider
+                value={[confidenceThresholds?.conditionGrading || 65]}
+                onValueChange={(value) => handleThresholdChange('conditionGrading', value)}
+                min={50}
+                max={95}
+                step={5}
+                className="w-full"
+              />
+              <p className="text-xs text-slate-500">
+                Auto-suggest media and sleeve grades when AI confidence exceeds this threshold
+              </p>
+            </div>
+
+            <Separator className="bg-slate-800" />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Detective className="w-4 h-4 text-accent" />
+                  <Label className="text-slate-200">Bargain Detection</Label>
+                </div>
+                <span className="text-sm font-mono text-accent">{confidenceThresholds?.bargainDetection || 80}%</span>
+              </div>
+              <Slider
+                value={[confidenceThresholds?.bargainDetection || 80]}
+                onValueChange={(value) => handleThresholdChange('bargainDetection', value)}
+                min={50}
+                max={95}
+                step={5}
+                className="w-full"
+              />
+              <p className="text-xs text-slate-500">
+                Flag marketplace listings as bargains when detection confidence exceeds this threshold
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button onClick={resetThresholds} variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                Reset to Defaults
               </Button>
             </div>
           </CardContent>

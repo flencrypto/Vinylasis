@@ -16,7 +16,8 @@ import {
   Barcode, 
   Record, 
   FilmStrip,
-  Info
+  Info,
+  ShieldCheck
 } from '@phosphor-icons/react'
 import { ItemImage } from '@/lib/types'
 import { 
@@ -24,6 +25,7 @@ import {
   analyzeImageComplete,
   DefectType 
 } from '@/lib/openai-vision-service'
+import { useConfidenceThresholds } from '@/hooks/use-confidence-thresholds'
 
 interface ImageAnalysisDialogProps {
   open: boolean
@@ -68,6 +70,7 @@ export function ImageAnalysisDialog({
   const [results, setResults] = useState<Map<string, ImageAnalysisOutput>>(new Map())
   const [currentStep, setCurrentStep] = useState('')
   const [showRawOutput, setShowRawOutput] = useState<string | null>(null)
+  const { checkConfidence, getThreshold } = useConfidenceThresholds()
 
   const handleAnalyze = async () => {
     if (images.length === 0) return
@@ -104,15 +107,23 @@ export function ImageAnalysisDialog({
   }
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-500'
-    if (confidence >= 0.6) return 'text-yellow-500'
+    const threshold = getThreshold('imageClassification') / 100
+    if (confidence >= threshold) return 'text-green-500'
+    if (confidence >= threshold * 0.8) return 'text-yellow-500'
     return 'text-orange-500'
   }
 
   const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.8) return { variant: 'default' as const, label: 'High Confidence' }
-    if (confidence >= 0.6) return { variant: 'secondary' as const, label: 'Medium Confidence' }
-    return { variant: 'destructive' as const, label: 'Low Confidence' }
+    const threshold = getThreshold('imageClassification') / 100
+    const meetsThreshold = confidence >= threshold
+    
+    if (meetsThreshold) {
+      return { variant: 'default' as const, label: 'Trusted', icon: <ShieldCheck size={14} weight="fill" /> }
+    }
+    if (confidence >= threshold * 0.8) {
+      return { variant: 'secondary' as const, label: 'Review Needed', icon: <Warning size={14} /> }
+    }
+    return { variant: 'destructive' as const, label: 'Low Confidence', icon: <Warning size={14} weight="fill" /> }
   }
 
   const getSeverityColor = (severity: string) => {
@@ -201,7 +212,8 @@ export function ImageAnalysisDialog({
                             <h3 className="font-semibold text-lg">
                               {IMAGE_TYPE_LABELS[analysis.imageType]}
                             </h3>
-                            <Badge variant={confidenceBadge.variant}>
+                            <Badge variant={confidenceBadge.variant} className="flex items-center gap-1">
+                              {confidenceBadge.icon}
                               {confidenceBadge.label}
                             </Badge>
                           </div>
