@@ -16,6 +16,7 @@ interface APIKeys {
   ebayClientId: string
   ebayClientSecret: string
   ebayDevId: string
+  imgbbKey: string
 }
 
 export default function SettingsView() {
@@ -26,6 +27,7 @@ export default function SettingsView() {
     ebayClientId: '',
     ebayClientSecret: '',
     ebayDevId: '',
+    imgbbKey: '',
   })
 
   const [showKeys, setShowKeys] = useState({
@@ -35,6 +37,7 @@ export default function SettingsView() {
     ebayClientId: false,
     ebayClientSecret: false,
     ebayDevId: false,
+    imgbbKey: false,
   })
 
   const [notificationsEnabled, setNotificationsEnabled] = useKV<boolean>('vinyl-vault-notifications', true)
@@ -48,6 +51,7 @@ export default function SettingsView() {
       ebayClientId: '',
       ebayClientSecret: '',
       ebayDevId: '',
+      imgbbKey: '',
     }) => ({
       ...current,
       [key]: value,
@@ -75,6 +79,7 @@ export default function SettingsView() {
       ebayClientId: '',
       ebayClientSecret: '',
       ebayDevId: '',
+      imgbbKey: '',
     })
     toast.success('All API keys cleared')
   }
@@ -193,6 +198,38 @@ export default function SettingsView() {
               <p className="text-xs text-slate-500 flex items-start gap-1">
                 <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
                 Used for market data, pricing trends, and collection management
+              </p>
+            </div>
+
+            <Separator className="bg-slate-800" />
+
+            <div className="space-y-2">
+              <Label htmlFor="imgbb-key" className="text-slate-200">imgBB API Key</Label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    id="imgbb-key"
+                    type={showKeys.imgbbKey ? 'text' : 'password'}
+                    value={apiKeys?.imgbbKey || ''}
+                    onChange={(e) => handleKeyChange('imgbbKey', e.target.value)}
+                    placeholder="Enter your imgBB API key"
+                    className="bg-slate-950/50 border-slate-700 text-white pr-10"
+                  />
+                  <button
+                    onClick={() => toggleShowKey('imgbbKey')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  >
+                    {showKeys.imgbbKey ? (
+                      <EyeSlash className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 flex items-start gap-1">
+                <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                Required for uploading photos to eBay listings. Get your free API key at <a href="https://api.imgbb.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">api.imgbb.com</a>
               </p>
             </div>
 

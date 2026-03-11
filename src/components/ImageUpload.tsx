@@ -1,27 +1,35 @@
 import { useState, useRef } from 'react'
+import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { ImageType, ItemImage } from '@/lib/types'
-import { Camera, Trash, Image as ImageIcon } from '@phosphor-icons/react'
+import { Camera, Trash, Image as ImageIcon, CloudArrowUp, CheckCircle } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { uploadImageToImgBB } from '@/lib/imgbb-service'
+import { toast } from 'sonner'
 
 interface ImageUploadProps {
   images: ItemImage[]
   onImagesChange: (images: ItemImage[]) => void
   maxImages?: number
+  autoUploadToImgBB?: boolean
 }
 
-export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUploadProps) {
+export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUploadToImgBB = false }: ImageUploadProps) {
   const [selectedType, setSelectedType] = useState<ImageType>('front_cover')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [apiKeys] = useKV<{ imgbbKey?: string }>('vinyl-vault-api-keys', {})
+  const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set())
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
     if (images.length >= maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`)
       return
     }
 
@@ -34,16 +42,25 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
 
       const dataUrl = await fileToDataUrl(file)
       
-      newImages.push({
+      const newImage: ItemImage = {
         id: `img-${Date.now()}-${i}`,
         type: selectedType,
         dataUrl,
         mimeType: file.type,
         uploadedAt: new Date().toISOString()
-      })
+      }
+
+      newImages.push(newImage)
     }
 
-    onImagesChange([...images, ...newImages])
+    const updatedImages = [...images, ...newImages]
+    onImagesChange(updatedImages)
+
+    if (autoUploadToImgBB && apiKeys?.imgbbKey) {
+      for (const img of newImages) {
+        await uploadToImgBB(img)
+      }
+    }
     
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -67,6 +84,77 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
     onImagesChange(
       images.map(img => img.id === imageId ? { ...img, type: newType } : img)
     )
+  }
+
+  const uploadToImgBB = async (image: ItemImage) => {
+    const imgbbKey = apiKeys?.imgbbKey
+    if (!imgbbKey) {
+      toast.error('imgBB API key not configured', {
+        description: 'Please add your imgBB API key in Settings'
+      })
+      return
+    }
+
+    if (image.imgbbUrl) {
+      toast.info('Image already uploaded to imgBB')
+      return
+    }
+
+    setUploadingImages(prev => new Set(prev).add(image.id))
+
+    try {
+      const uploaded = await uploadImageToImgBB(image.dataUrl, imgbbKey, `vinyl-${image.type}`)
+      
+      onImagesChange(
+        images.map(img => 
+          img.id === image.id 
+            ? {
+                ...img,
+                imgbbUrl: uploaded.url,
+                imgbbDisplayUrl: uploaded.displayUrl,
+                imgbbThumbUrl: uploaded.thumbUrl,
+                imgbbDeleteUrl: uploaded.deleteUrl
+              }
+            : img
+        )
+      )
+
+      toast.success('Image uploaded to imgBB', {
+        description: 'Image URL ready for eBay listings'
+      })
+    } catch (error) {
+      toast.error('Failed to upload to imgBB', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      })
+    } finally {
+      setUploadingImages(prev => {
+        const next = new Set(prev)
+        next.delete(image.id)
+        return next
+      })
+    }
+  }
+
+  const uploadAllToImgBB = async () => {
+    const imgbbKey = apiKeys?.imgbbKey
+    if (!imgbbKey) {
+      toast.error('imgBB API key not configured', {
+        description: 'Please add your imgBB API key in Settings'
+      })
+      return
+    }
+
+    const unuploadedImages = images.filter(img => !img.imgbbUrl)
+    if (unuploadedImages.length === 0) {
+      toast.info('All images already uploaded')
+      return
+    }
+
+    toast.info(`Uploading ${unuploadedImages.length} images...`)
+
+    for (const img of unuploadedImages) {
+      await uploadToImgBB(img)
+    }
   }
 
   return (
@@ -98,6 +186,17 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
           <Camera size={18} />
           Upload Images
         </Button>
+        {images.length > 0 && apiKeys?.imgbbKey && (
+          <Button
+            type="button"
+            onClick={uploadAllToImgBB}
+            disabled={images.every(img => img.imgbbUrl)}
+            className="gap-2 bg-accent hover:bg-accent/90"
+          >
+            <CloudArrowUp size={18} />
+            Upload All to imgBB
+          </Button>
+        )}
         <input
           ref={fileInputRef}
           type="file"
@@ -112,12 +211,26 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {images.map((image) => (
             <Card key={image.id} className="relative group overflow-hidden">
-              <div className="aspect-square bg-muted">
+              <div className="aspect-square bg-muted relative">
                 <img
                   src={image.dataUrl}
                   alt={image.type}
                   className="w-full h-full object-cover"
                 />
+                {image.imgbbUrl && (
+                  <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1">
+                    <CheckCircle size={14} weight="fill" />
+                    Hosted
+                  </Badge>
+                )}
+                {uploadingImages.has(image.id) && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="text-white text-sm flex items-center gap-2">
+                      <CloudArrowUp size={20} className="animate-pulse" />
+                      Uploading...
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="p-3 space-y-2">
                 <Select
@@ -136,16 +249,31 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
                     <SelectItem value="spine">Spine</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleRemoveImage(image.id)}
-                  className="w-full gap-2"
-                >
-                  <Trash size={14} />
-                  Remove
-                </Button>
+                <div className="flex gap-2">
+                  {!image.imgbbUrl && apiKeys?.imgbbKey && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => uploadToImgBB(image)}
+                      disabled={uploadingImages.has(image.id)}
+                      className="flex-1 gap-2 text-xs"
+                    >
+                      <CloudArrowUp size={14} />
+                      Upload
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleRemoveImage(image.id)}
+                    className="flex-1 gap-2"
+                  >
+                    <Trash size={14} />
+                    Remove
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
@@ -164,7 +292,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10 }: ImageUpl
       )}
 
       <p className="text-xs text-muted-foreground">
-        Upload up to {maxImages} images. Include front/back covers, labels, and runout areas for best identification results.
+        Upload up to {maxImages} images. {apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
       </p>
     </div>
   )

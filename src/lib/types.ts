@@ -132,6 +132,10 @@ export interface ItemImage {
   dataUrl: string
   mimeType: string
   uploadedAt: string
+  imgbbUrl?: string
+  imgbbDisplayUrl?: string
+  imgbbThumbUrl?: string
+  imgbbDeleteUrl?: string
 }
 
 export interface PressingCandidate {
