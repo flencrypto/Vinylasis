@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ImageType, ItemImage } from '@/lib/types'
-import { Camera, Trash, Image as ImageIcon, CloudArrowUp, CheckCircle } from '@phosphor-icons/react'
+import { Camera, Trash, Image as ImageIcon, CloudArrowUp, CheckCircle, Sparkle, CircleNotch } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { uploadImageToImgBB } from '@/lib/imgbb-service'
+import { classifyImage } from '@/lib/openai-vision-service'
 import { toast } from 'sonner'
 
 interface ImageUploadProps {
@@ -16,13 +17,15 @@ interface ImageUploadProps {
   onImagesChange: (images: ItemImage[]) => void
   maxImages?: number
   autoUploadToImgBB?: boolean
+  autoDetectType?: boolean
 }
 
-export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUploadToImgBB = false }: ImageUploadProps) {
+export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUploadToImgBB = false, autoDetectType = true }: ImageUploadProps) {
   const [selectedType, setSelectedType] = useState<ImageType>('front_cover')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [apiKeys] = useKV<{ imgbbKey?: string }>('vinyl-vault-api-keys', {})
+  const [apiKeys] = useKV<{ imgbbKey?: string, openaiKey?: string }>('vinyl-vault-api-keys', {})
   const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set())
+  const [detectingTypes, setDetectingTypes] = useState<Set<string>>(new Set())
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -56,6 +59,12 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
     const updatedImages = [...images, ...newImages]
     onImagesChange(updatedImages)
 
+    if (autoDetectType && apiKeys?.openaiKey) {
+      for (const img of newImages) {
+        detectImageType(img)
+      }
+    }
+
     if (autoUploadToImgBB && apiKeys?.imgbbKey) {
       for (const img of newImages) {
         await uploadToImgBB(img)
@@ -74,6 +83,40 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       reader.onerror = reject
       reader.readAsDataURL(file)
     })
+  }
+
+  const detectImageType = async (image: ItemImage) => {
+    const openaiKey = apiKeys?.openaiKey
+    if (!openaiKey || !autoDetectType) return
+
+    setDetectingTypes(prev => new Set(prev).add(image.id))
+
+    try {
+      const result = await classifyImage(image.dataUrl)
+      
+      onImagesChange(
+        images.map(img =>
+          img.id === image.id 
+            ? { ...img, type: result.imageType as ImageType }
+            : img
+        )
+      )
+
+      toast.success(`Auto-detected: ${result.imageType.replace('_', ' ')}`, {
+        description: `${Math.round(result.confidence * 100)}% confidence`
+      })
+    } catch (error) {
+      console.error('Image type detection failed:', error)
+      toast.error('Auto-detection failed', {
+        description: 'Please select image type manually'
+      })
+    } finally {
+      setDetectingTypes(prev => {
+        const next = new Set(prev)
+        next.delete(image.id)
+        return next
+      })
+    }
   }
 
   const handleRemoveImage = (imageId: string) => {
@@ -217,11 +260,19 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
                   alt={image.type}
                   className="w-full h-full object-cover"
                 />
-                {image.imgbbUrl && (
+                {image.imgbbUrl && !detectingTypes.has(image.id) && (
                   <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1">
                     <CheckCircle size={14} weight="fill" />
                     Hosted
                   </Badge>
+                )}
+                {detectingTypes.has(image.id) && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="text-white text-sm flex flex-col items-center gap-2">
+                      <CircleNotch size={24} className="animate-spin" weight="bold" />
+                      <span>Detecting type...</span>
+                    </div>
+                  </div>
                 )}
                 {uploadingImages.has(image.id) && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -249,7 +300,20 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
                     <SelectItem value="spine">Spine</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  {autoDetectType && apiKeys?.openaiKey && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => detectImageType(image)}
+                      disabled={detectingTypes.has(image.id)}
+                      className="flex-1 gap-2 text-xs"
+                    >
+                      <Sparkle size={14} weight="fill" />
+                      Auto-Detect
+                    </Button>
+                  )}
                   {!image.imgbbUrl && apiKeys?.imgbbKey && (
                     <Button
                       type="button"
@@ -292,7 +356,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       )}
 
       <p className="text-xs text-muted-foreground">
-        Upload up to {maxImages} images. {apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
+        Upload up to {maxImages} images. {apiKeys?.openaiKey && autoDetectType ? 'AI will automatically detect image types. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
       </p>
     </div>
   )
