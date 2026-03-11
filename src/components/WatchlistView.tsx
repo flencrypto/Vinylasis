@@ -3,6 +3,7 @@ import { useKV } from '@github/spark/hooks'
 import { WatchlistItem, BargainCard as BargainCardType } from '@/lib/types'
 import { WatchlistCard } from './WatchlistCard'
 import { AddWatchlistDialog } from './AddWatchlistDialog'
+import { BulkImportWatchlistDialog } from './BulkImportWatchlistDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +17,8 @@ import {
   MagnifyingGlass, 
   Lightning,
   Warning,
-  Info
+  Info,
+  FileArrowUp
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { scanMarketplaces, MarketplaceConfig, getDefaultMarketplaceConfig } from '@/lib/marketplace-scanner'
@@ -43,6 +45,7 @@ export default function WatchlistView() {
   const [scanSettings = defaultScanSettings, setScanSettings] = useKV<ScanSettings>('watchlist-scan-settings', defaultScanSettings)
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const [scanStatus, setScanStatus] = useState('')
@@ -215,6 +218,10 @@ export default function WatchlistView() {
     )
   }
 
+  const handleBulkImport = (items: WatchlistItem[]) => {
+    setWatchlistItems(current => [...(current || []), ...items])
+  }
+
   const getLastScanDisplay = () => {
     if (!lastScanTime) return 'Never'
     
@@ -243,14 +250,25 @@ export default function WatchlistView() {
             {watchlistItems.length} item{watchlistItems.length !== 1 ? 's' : ''} • Last scan: {getLastScanDisplay()}
           </p>
         </div>
-        <Button
-          onClick={() => setIsDialogOpen(true)}
-          size="sm"
-          className="gap-2"
-        >
-          <Plus size={16} weight="bold" />
-          Add
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setIsBulkImportOpen(true)}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            <FileArrowUp size={16} weight="bold" />
+            Bulk Import
+          </Button>
+          <Button
+            onClick={() => setIsDialogOpen(true)}
+            size="sm"
+            className="gap-2"
+          >
+            <Plus size={16} weight="bold" />
+            Add
+          </Button>
+        </div>
       </div>
 
       {!marketplacesConfigured && (
@@ -435,6 +453,12 @@ export default function WatchlistView() {
           setIsDialogOpen(false)
           toast.success('Watchlist item added')
         }}
+      />
+
+      <BulkImportWatchlistDialog
+        open={isBulkImportOpen}
+        onOpenChange={setIsBulkImportOpen}
+        onImport={handleBulkImport}
       />
     </div>
   )
