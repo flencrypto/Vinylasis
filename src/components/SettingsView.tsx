@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
-import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap } from '@phosphor-icons/react'
+import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap, Lightning, Database, CloudArrowUp } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { testDiscogsConnection } from '@/lib/marketplace-discogs'
+import { uploadImageToImgBB } from '@/lib/imgbb-service'
 
 interface APIKeys {
   openaiKey: string
@@ -61,6 +63,9 @@ export default function SettingsView() {
     bargainDetection: 80,
   })
 
+  const [testingDiscogs, setTestingDiscogs] = useState(false)
+  const [testingImgBB, setTestingImgBB] = useState(false)
+
   const handleKeyChange = (key: keyof APIKeys, value: string) => {
     setApiKeys((current = {
       openaiKey: '',
@@ -104,6 +109,60 @@ export default function SettingsView() {
       bargainDetection: 80,
     })
     toast.success('Confidence thresholds reset to defaults')
+  }
+
+  const testDiscogsAPI = async () => {
+    if (!apiKeys?.discogsUserToken) {
+      toast.error('Please enter a Discogs user token first')
+      return
+    }
+
+    setTestingDiscogs(true)
+    try {
+      const result = await testDiscogsConnection({
+        userToken: apiKeys.discogsUserToken,
+      })
+
+      if (result.success) {
+        toast.success('Discogs API connected!', {
+          description: result.message,
+        })
+      } else {
+        toast.error('Discogs connection failed', {
+          description: result.message,
+        })
+      }
+    } catch (error) {
+      toast.error('Discogs connection test failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    } finally {
+      setTestingDiscogs(false)
+    }
+  }
+
+  const testImgBBAPI = async () => {
+    if (!apiKeys?.imgbbKey) {
+      toast.error('Please enter an imgBB API key first')
+      return
+    }
+
+    setTestingImgBB(true)
+    try {
+      const testImageDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+      
+      await uploadImageToImgBB(testImageDataUrl, apiKeys.imgbbKey, 'test-connection')
+      
+      toast.success('imgBB API connected!', {
+        description: 'Test image uploaded successfully',
+      })
+    } catch (error) {
+      toast.error('imgBB connection failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    } finally {
+      setTestingImgBB(false)
+    }
   }
 
   const handleSave = () => {
@@ -186,7 +245,12 @@ export default function SettingsView() {
               <h4 className="text-sm font-semibold text-white">Discogs API</h4>
               
               <div className="space-y-2">
-                <Label htmlFor="discogs-user-token" className="text-slate-200">User Token (Recommended)</Label>
+                <Label htmlFor="discogs-user-token" className="text-slate-200 flex items-center gap-2">
+                  User Token (Recommended)
+                  {apiKeys?.discogsUserToken && (
+                    <Database className="w-4 h-4 text-green-500" weight="fill" />
+                  )}
+                </Label>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
                     <Input
@@ -208,10 +272,28 @@ export default function SettingsView() {
                       )}
                     </button>
                   </div>
+                  <Button
+                    onClick={testDiscogsAPI}
+                    disabled={testingDiscogs || !apiKeys?.discogsUserToken}
+                    variant="outline"
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 gap-2"
+                  >
+                    {testingDiscogs ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Lightning className="w-4 h-4" />
+                        Test
+                      </>
+                    )}
+                  </Button>
                 </div>
                 <p className="text-xs text-slate-500 flex items-start gap-1">
                   <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  Generate a personal access token from <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Discogs Developer Settings</a>
+                  Generate a personal access token from <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Discogs Developer Settings</a>. This enables real pressing identification with the Discogs database.
                 </p>
               </div>
 
@@ -269,14 +351,19 @@ export default function SettingsView() {
               
               <p className="text-xs text-slate-500 flex items-start gap-1">
                 <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                Used for pressing identification, market data, pricing trends, and bargain detection. User token is sufficient for most features.
+                Used for pressing identification, market data, pricing trends, and bargain detection. <strong>Real Discogs database integration</strong> - identifies pressings from their actual database when user token is configured.
               </p>
             </div>
 
             <Separator className="bg-slate-800" />
 
             <div className="space-y-2">
-              <Label htmlFor="imgbb-key" className="text-slate-200">imgBB API Key</Label>
+              <Label htmlFor="imgbb-key" className="text-slate-200 flex items-center gap-2">
+                imgBB API Key
+                {apiKeys?.imgbbKey && (
+                  <CloudArrowUp className="w-4 h-4 text-green-500" weight="fill" />
+                )}
+              </Label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Input
@@ -298,10 +385,28 @@ export default function SettingsView() {
                     )}
                   </button>
                 </div>
+                <Button
+                  onClick={testImgBBAPI}
+                  disabled={testingImgBB || !apiKeys?.imgbbKey}
+                  variant="outline"
+                  className="border-slate-700 text-slate-300 hover:bg-slate-800 gap-2"
+                >
+                  {testingImgBB ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Lightning className="w-4 h-4" />
+                      Test
+                    </>
+                  )}
+                </Button>
               </div>
               <p className="text-xs text-slate-500 flex items-start gap-1">
                 <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                Required for uploading photos to eBay listings. Get your free API key at <a href="https://api.imgbb.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">api.imgbb.com</a>
+                Required for uploading photos to eBay listings. Get your free API key at <a href="https://api.imgbb.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">api.imgbb.com</a>. Images are hosted externally and embedded in marketplace HTML descriptions.
               </p>
             </div>
 
