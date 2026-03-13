@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ImageUpload } from '@/components/ImageUpload'
+import { BatchPhotoCaptureDialog } from '@/components/BatchPhotoCaptureDialog'
 import BarcodeScannerWidget, { BarcodeScanResult } from '@/components/BarcodeScannerWidget'
 import { ItemImage, Format, MediaGrade, SleeveGrade } from '@/lib/types'
 import {
@@ -21,7 +22,8 @@ import {
   CircleNotch,
   Disc,
   Plus,
-  ChartLine
+  ChartLine,
+  Stack
 } from '@phosphor-icons/react'
 import { analyzeVinylImage } from '@/lib/image-analysis-ai'
 import { identifyPressing } from '@/lib/pressing-identification-ai'
@@ -78,6 +80,7 @@ export default function NewListingView() {
   const [showPreview, setShowPreview] = useState(false)
   const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [showABTestDialog, setShowABTestDialog] = useState(false)
+  const [showBatchCapture, setShowBatchCapture] = useState(false)
   const [pricingRecommendation, setPricingRecommendation] = useState<AutoPricingRecommendation | null>(null)
   const [usedPatternOptimization, setUsedPatternOptimization] = useState(false)
   
@@ -294,12 +297,22 @@ export default function NewListingView() {
             Upload photos for AI-powered record identification and listing creation
           </p>
         </div>
-        {hasResults && (
-          <Button variant="outline" onClick={handleReset} className="gap-2">
-            <Plus className="w-5 h-5" />
-            Start New
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowBatchCapture(true)}
+            className="gap-2"
+          >
+            <Stack size={18} weight="fill" />
+            Bulk Capture
           </Button>
-        )}
+          {hasResults && (
+            <Button variant="outline" onClick={handleReset} className="gap-2">
+              <Plus className="w-5 h-5" />
+              Start New
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -639,6 +652,11 @@ export default function NewListingView() {
           }}
         />
       )}
+
+      <BatchPhotoCaptureDialog
+        open={showBatchCapture}
+        onOpenChange={setShowBatchCapture}
+      />
     </div>
   )
 }
