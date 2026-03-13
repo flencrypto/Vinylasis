@@ -24,6 +24,7 @@ interface ImageUploadProps {
 export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUploadToImgBB = false, autoDetectType = true }: ImageUploadProps) {
   const [selectedType, setSelectedType] = useState<ImageType>('front_cover')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [apiKeys] = useKV<{ imgbbKey?: string, openaiKey?: string }>('vinyl-vault-api-keys', {})
   const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set())
   const [detectingTypes, setDetectingTypes] = useState<Set<string>>(new Set())
@@ -76,6 +77,14 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+  }
+
+  const handleCameraCapture = () => {
+    if (images.length >= maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`)
+      return
+    }
+    cameraInputRef.current?.click()
   }
 
   const fileToDataUrl = (file: File): Promise<string> => {
@@ -270,22 +279,34 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
   return (
     <div className="space-y-4">
       <div className="flex items-end gap-3 flex-wrap">
-        <div className="flex-1 min-w-[200px] space-y-2">
-          <Label>Image Type</Label>
-          <Select value={selectedType} onValueChange={(value: ImageType) => setSelectedType(value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="front_cover">Front Cover</SelectItem>
-              <SelectItem value="back_cover">Back Cover</SelectItem>
-              <SelectItem value="label">Label</SelectItem>
-              <SelectItem value="runout">Runout / Matrix</SelectItem>
-              <SelectItem value="insert">Insert</SelectItem>
-              <SelectItem value="spine">Spine</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {!autoDetectType && (
+          <div className="flex-1 min-w-[200px] space-y-2">
+            <Label>Image Type (for manual uploads)</Label>
+            <Select value={selectedType} onValueChange={(value: ImageType) => setSelectedType(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="front_cover">Front Cover</SelectItem>
+                <SelectItem value="back_cover">Back Cover</SelectItem>
+                <SelectItem value="label">Label</SelectItem>
+                <SelectItem value="runout">Runout / Matrix</SelectItem>
+                <SelectItem value="insert">Insert</SelectItem>
+                <SelectItem value="spine">Spine</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <Button
+          type="button"
+          variant="default"
+          onClick={handleCameraCapture}
+          disabled={images.length >= maxImages}
+          className="gap-2"
+        >
+          <Camera size={18} weight="fill" />
+          Take Photo
+        </Button>
         <Button
           type="button"
           variant="outline"
@@ -293,8 +314,8 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
           disabled={images.length >= maxImages}
           className="gap-2"
         >
-          <Camera size={18} />
-          Upload Images
+          <ImageIcon size={18} />
+          Choose Files
         </Button>
         {images.length > 0 && apiKeys?.openaiKey && autoDetectType && (
           <Button
@@ -324,6 +345,14 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
           type="file"
           accept="image/*"
           multiple
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={handleFileSelect}
         />
@@ -435,7 +464,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       )}
 
       <p className="text-xs text-muted-foreground">
-        Upload up to {maxImages} images. {apiKeys?.openaiKey && autoDetectType ? 'AI will automatically detect image types, or use "Auto-Detect All Types" to classify all images at once. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
+        Use "Take Photo" to capture images directly with your camera, or "Choose Files" to upload from your device. Upload up to {maxImages} images. {apiKeys?.openaiKey && autoDetectType ? 'AI automatically detects image types when photos are added. Use "Auto-Detect All Types" to classify all images at once. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
       </p>
     </div>
   )
