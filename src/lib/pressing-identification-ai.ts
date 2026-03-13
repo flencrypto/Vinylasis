@@ -1,4 +1,5 @@
 import { PressingCandidate, ImageAnalysisResult, Format } from './types'
+import { discogsCache } from './discogs-cache-service'
 
 export interface PressingIdentificationInput {
   imageAnalysis?: ImageAnalysisResult[]
@@ -256,6 +257,14 @@ export async function searchDiscogsDatabase(
     return searchDiscogsDatabaseFallback(query)
   }
 
+  const cacheKey = { type: 'database', ...query }
+  const cached = await discogsCache.get<DiscogsRelease[]>(cacheKey)
+  
+  if (cached) {
+    console.log('Cache hit for Discogs database search')
+    return cached
+  }
+
   try {
     const searchParams = new URLSearchParams()
     
@@ -331,6 +340,9 @@ export async function searchDiscogsDatabase(
         console.error(`Failed to fetch release ${releaseId}:`, error)
       }
     }
+
+    await discogsCache.set(cacheKey, releases, 7 * 24 * 60 * 60 * 1000)
+    console.log('Cached Discogs database search results')
 
     return releases
   } catch (error) {

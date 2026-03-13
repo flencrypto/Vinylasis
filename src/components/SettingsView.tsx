@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { testDiscogsConnection } from '@/lib/marketplace-discogs'
 import { uploadImageToImgBB } from '@/lib/imgbb-service'
 import { DiscogsTestDialog } from '@/components/DiscogsTestDialog'
+import { DiscogsCacheStats } from '@/components/DiscogsCacheStats'
 
 interface APIKeys {
   openaiKey: string
@@ -634,6 +635,21 @@ export default function SettingsView() {
                 onCheckedChange={setAutoSync}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900/50 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Database className="w-5 h-5" />
+              Discogs API Cache
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Offline caching reduces API calls and improves performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <DiscogsCacheStats />
           </CardContent>
         </Card>
 

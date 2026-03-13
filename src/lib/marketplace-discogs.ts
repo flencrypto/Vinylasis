@@ -1,4 +1,5 @@
 import { MarketListing } from './types'
+import { discogsCache } from './discogs-cache-service'
 
 export interface DiscogsSearchParams {
   query?: string
@@ -124,6 +125,14 @@ export async function searchDiscogsMarketplace(
   params: DiscogsSearchParams,
   config: DiscogsApiConfig
 ): Promise<MarketListing[]> {
+  const cacheKey = { type: 'marketplace', ...params }
+  const cached = await discogsCache.get<MarketListing[]>(cacheKey)
+  
+  if (cached) {
+    console.log('Cache hit for Discogs marketplace search')
+    return cached
+  }
+
   const baseUrl = 'https://api.discogs.com/marketplace/search'
   
   const searchParams = new URLSearchParams()
@@ -188,7 +197,7 @@ export async function searchDiscogsMarketplace(
 
       const data: DiscogsMarketplaceResponse = await response.json()
 
-      return data.listings.map(listing => {
+      const results = data.listings.map(listing => {
         const conditionStr = listing.sleeve_condition 
           ? `${listing.condition} / ${listing.sleeve_condition}`
           : listing.condition
@@ -209,6 +218,11 @@ export async function searchDiscogsMarketplace(
           url: `https://www.discogs.com${listing.uri}`,
         }
       })
+
+      await discogsCache.set(cacheKey, results, 24 * 60 * 60 * 1000)
+      console.log('Cached Discogs marketplace search results')
+
+      return results
     } catch (error) {
       clearTimeout(timeoutId)
       
