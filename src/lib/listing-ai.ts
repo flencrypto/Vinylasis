@@ -6,41 +6,88 @@ export async function generateSEOKeywords(
   item: CollectionItem,
   channel: 'ebay' | 'discogs' | 'shopify'
 ): Promise<string[]> {
-  const keywords: string[] = []
+  const baseKeywords: string[] = []
 
-  keywords.push(item.artistName)
-  keywords.push(item.releaseTitle)
-  keywords.push(item.format)
-  keywords.push(`${item.year}`)
-  keywords.push(item.country)
+  baseKeywords.push(item.artistName)
+  baseKeywords.push(item.releaseTitle)
+  baseKeywords.push(item.format)
+  baseKeywords.push(`${item.year}`)
+  baseKeywords.push(item.country)
 
   if (item.catalogNumber) {
-    keywords.push(item.catalogNumber)
+    baseKeywords.push(item.catalogNumber)
   }
 
-  keywords.push('vinyl')
-  keywords.push('record')
-  keywords.push('LP')
+  baseKeywords.push('vinyl')
+  baseKeywords.push('record')
+  
+  if (item.format === 'LP') {
+    baseKeywords.push('LP', 'album')
+  } else if (item.format === '7in') {
+    baseKeywords.push('7"', '45', 'single')
+  } else if (item.format === '12in') {
+    baseKeywords.push('12"', 'maxi single')
+  }
 
   if (item.condition.mediaGrade === 'M' || item.condition.mediaGrade === 'NM') {
-    keywords.push('mint')
-    keywords.push('near mint')
+    baseKeywords.push('mint', 'near mint', 'clean')
+  } else if (item.condition.mediaGrade === 'EX') {
+    baseKeywords.push('excellent', 'great condition')
   }
 
   if (item.year < 1970) {
-    keywords.push('vintage')
-    keywords.push('original pressing')
+    baseKeywords.push('vintage', 'original pressing', 'classic')
+  } else if (item.year < 1980) {
+    baseKeywords.push('70s', 'classic')
+  } else if (item.year < 1990) {
+    baseKeywords.push('80s')
   }
 
   const genreKeywords = inferGenreKeywords(item.artistName)
-  keywords.push(...genreKeywords)
+  baseKeywords.push(...genreKeywords)
 
   if (channel === 'ebay') {
-    keywords.push('collector')
-    keywords.push('rare')
+    baseKeywords.push('collector', 'collectible')
+    if (item.year < 1975) {
+      baseKeywords.push('rare')
+    }
   }
 
-  return keywords
+  try {
+    const prompt = spark.llmPrompt`You are an SEO expert specializing in vinyl record marketplace listings.
+
+Given this record:
+- Artist: ${item.artistName}
+- Title: ${item.releaseTitle}
+- Year: ${item.year}
+- Country: ${item.country}
+- Format: ${item.format}
+- Catalog: ${item.catalogNumber || 'N/A'}
+
+Generate 8-12 additional highly relevant SEO keywords that would help this listing be discovered by serious collectors and buyers on ${channel}.
+
+Focus on:
+- Genre and sub-genre terms
+- Artist era or movement (e.g., "60s psychedelic", "80s new wave")
+- Label significance (if recognizable catalog number)
+- Pressing characteristics that collectors search for
+- Musical style descriptors
+- Collector terms (audiophile, first press, original, reissue, etc.)
+
+Return ONLY a JSON array of keyword strings. Be specific and relevant - avoid generic terms.
+Example: ["british invasion", "mod revival", "power pop", "jangle pop", "C86", "indie pop", "Sarah Records"]`
+
+    const response = await spark.llm(prompt, 'gpt-4o-mini', true)
+    const aiKeywords = JSON.parse(response) as string[]
+    
+    if (Array.isArray(aiKeywords) && aiKeywords.length > 0) {
+      return [...new Set([...baseKeywords, ...aiKeywords])]
+    }
+  } catch (error) {
+    console.error('AI keyword generation failed, using base keywords:', error)
+  }
+
+  return [...new Set(baseKeywords)]
 }
 
 function inferGenreKeywords(artistName: string): string[] {
@@ -71,38 +118,82 @@ export async function generateListingCopy(
   channel: 'ebay' | 'discogs' | 'shopify',
   keywords: string[]
 ): Promise<{ title: string; subtitle?: string; description: string }> {
-  const prompt = spark.llmPrompt`You are an expert vinyl record dealer creating optimized marketplace listings.
+  const prompt = spark.llmPrompt`You are an expert vinyl record dealer with 20+ years of experience creating high-converting marketplace listings that balance SEO optimization with authentic expertise.
 
-Item Details:
-- Artist: ${item.artistName}
-- Title: ${item.releaseTitle}
-- Format: ${item.format}
-- Year: ${item.year}
-- Country: ${item.country}
-- Catalog Number: ${item.catalogNumber || 'N/A'}
-- Media Grade: ${item.condition.mediaGrade}
-- Sleeve Grade: ${item.condition.sleeveGrade}
-- Grading Standard: ${item.condition.gradingStandard}
-- Notes: ${item.condition.gradingNotes || 'No additional notes'}
+ITEM DETAILS:
+Artist: ${item.artistName}
+Title: ${item.releaseTitle}
+Format: ${item.format}
+Year: ${item.year}
+Country: ${item.country}
+Catalog Number: ${item.catalogNumber || 'N/A'}
+Media Grade: ${item.condition.mediaGrade} (${item.condition.gradingStandard} Standard)
+Sleeve Grade: ${item.condition.sleeveGrade} (${item.condition.gradingStandard} Standard)
+Condition Notes: ${item.condition.gradingNotes || 'No additional notes'}
 
-Channel: ${channel}
-SEO Keywords: ${keywords.join(', ')}
+MARKETPLACE: ${channel.toUpperCase()}
+TARGET KEYWORDS: ${keywords.join(', ')}
 
-Create a professional listing with:
-1. A compelling, SEO-optimized title (max 80 chars for eBay, can be longer for others)
-2. An optional subtitle with key details (only for eBay)
-3. A detailed description that includes:
-   - Opening hook about the album/artist
-   - Pressing details (year, country, catalog number)
-   - Condition description (media and sleeve, be specific)
-   - Notable features or selling points
-   - Grading standard used
-   - Any defects or issues mentioned in notes
-   - Professional closing
+LISTING TITLE REQUIREMENTS:
+- Maximum 80 characters for eBay (critical for mobile visibility)
+- Include: Artist, Title, Format, Year OR Catalog Number (not both - space is limited)
+- Include condition grade if space allows (e.g., "VG+/VG")
+- Use title case capitalization
+- Front-load most important keywords (artist/title first)
+- Avoid filler words like "Rare", "Wow", "Look", "L@@K"
+- Examples:
+  * "Beatles - Sgt Pepper LP UK 1st Press PCS 7027 1967 NM/EX Stereo"
+  * "Pink Floyd Dark Side of the Moon LP 1973 Harvest SHVL 804 VG+/VG+"
+  * "Miles Davis Kind of Blue LP Columbia CS 8163 1959 6-Eye EX/VG+"
 
-Make it engaging but accurate. Use keywords naturally. Be honest about condition.
+SUBTITLE REQUIREMENTS (eBay only, 55 char max):
+- Add secondary details not in title
+- Highlight pressing uniqueness: "Original 1st Press", "Rare Promo Copy", "Gatefold Sleeve"
+- Or condition highlights: "Near Mint Media", "Clean Labels", "No Splits"
+- Examples: "Original UK 1st Pressing | Gatefold Sleeve", "6-Eye Label | Mono Mix | Superb Copy"
 
-Return as JSON with keys: title, subtitle (can be null), description`
+DESCRIPTION REQUIREMENTS:
+Write a compelling 4-6 paragraph description that converts browsers into buyers:
+
+PARAGRAPH 1 - Opening Hook (2-3 sentences):
+- Lead with why this record matters (classic album, landmark pressing, collectible label)
+- Mention artist significance or album cultural impact
+- Create desire without hyperbole
+- Example: "An exceptional copy of one of jazz's most influential albums. This is the original 6-eye Columbia pressing from 1959, featuring the iconic Kind of Blue sessions that revolutionized modal jazz."
+
+PARAGRAPH 2 - Pressing Details (3-4 sentences):
+- Specify exact pressing (1st press, reissue, country of manufacture)
+- Catalog number and label details
+- Format specifics (mono/stereo, gatefold, inserts, poster)
+- Any pressing-specific features (matrix codes, label variants, unique details)
+- Example: "This is the UK first pressing on Harvest Records (catalog SHVL 804), identifiable by the original solid blue triangle label and gatefold cover with poster and stickers included. Matrix numbers: A2/B2. All components are present and correct."
+
+PARAGRAPH 3 - Condition Description (4-5 sentences):
+- Be specific and honest about media condition
+- Describe sleeve condition in detail
+- Mention any defects clearly and their severity
+- Reference the grading standard used
+- Use collector language: "spindle trails", "light surface marks", "minor edge wear", "seam intact"
+- Example: "Media grades ${item.condition.mediaGrade} with light surface marks that do not affect playback. Labels are clean with minimal spindle wear. Sleeve grades ${item.condition.sleeveGrade} with light ringwear to front cover and minor corner bumping. All seams are intact with no splits. Graded conservatively using ${item.condition.gradingStandard} standards."
+
+PARAGRAPH 4 - Additional Notes & Closing (2-3 sentences):
+- Any other relevant details from condition notes
+- Professional closing about packaging/shipping care
+- Invitation to ask questions
+- Example: "This record has been stored in a smoke-free environment in protective inner sleeves. Will be shipped in a professional record mailer with cardboard stiffeners for maximum protection. Please don't hesitate to contact me with any questions."
+
+TONE GUIDELINES:
+- Professional but personable
+- Confident without being pushy
+- Honest about condition (builds trust)
+- Knowledgeable (use proper terminology)
+- Avoid: exclamation marks, all caps, excessive adjectives, clichés
+- Good words: exceptional, excellent, classic, original, authentic, clean, well-preserved
+- Avoid: rare!!, WOW, LOOK, amazing!!!, MINT (unless truly mint)
+
+Return valid JSON with keys: title, subtitle (string or null), description
+
+CRITICAL: Ensure title is exactly 80 characters or less. Ensure subtitle is 55 characters or less. Be honest about condition - over-grading damages reputation.`
 
   try {
     const response = await spark.llm(prompt, 'gpt-4o', true)
@@ -165,25 +256,32 @@ Thank you for your interest!`
 }
 
 export function suggestListingPrice(estimate: PriceEstimate, condition: MediaGrade): number {
-  const conditionPremiums: Record<string, number> = {
-    'M': 1.2,
-    'NM': 1.1,
+  const conditionMultipliers: Record<string, number> = {
+    'M': 1.25,
+    'NM': 1.15,
     'EX': 1.0,
-    'VG+': 0.95,
-    'VG': 0.85,
-    'G': 0.7,
-    'F': 0.5,
-    'P': 0.3,
+    'VG+': 0.90,
+    'VG': 0.75,
+    'G': 0.60,
+    'F': 0.45,
+    'P': 0.25,
   }
 
-  const premium = conditionPremiums[condition] || 1.0
-  const basePrice = estimate.estimateMid * premium
+  const multiplier = conditionMultipliers[condition] || 1.0
+  const conditionAdjustedPrice = estimate.estimateMid * multiplier
 
-  const marketingAdjustment = 1.15
+  const negotiationBuffer = 1.10
+  const marketingPrice = conditionAdjustedPrice * negotiationBuffer
 
-  const suggestedPrice = basePrice * marketingAdjustment
+  const roundedPrice = Math.round(marketingPrice * 100) / 100
 
-  return Math.round(suggestedPrice * 100) / 100
+  if (roundedPrice >= 100) {
+    return Math.round(roundedPrice / 5) * 5
+  } else if (roundedPrice >= 20) {
+    return Math.round(roundedPrice)
+  } else {
+    return Math.round(roundedPrice * 4) / 4
+  }
 }
 
 export function generateEbayHTMLDescription(
