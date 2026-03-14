@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,10 +13,12 @@ import {
   CheckCircle,
   SpinnerGap,
   Globe,
-  Info
+  Info,
+  Warning
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { CollectionItem } from '@/lib/types'
+import { multiversxService } from '@/lib/multiversx-service'
 
 type MultiversXNetwork = 'mainnet' | 'devnet' | 'testnet'
 
@@ -43,27 +45,40 @@ export default function MultiversXNFTSection() {
   const [nfts, setNfts] = useKV<MultiversXNFT[]>('vinyl-vault-multiversx-nfts', [])
   const [selectedItemId, setSelectedItemId] = useState<string>('')
   const [isMinting, setIsMinting] = useState(false)
-  const [contractAddress, setContractAddress] = useState('erd1qqqqqqqqqqqqqpgq...')
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [contractAddress, setContractAddress] = useState('')
   const [walletState, setWalletState] = useState<MultiversXWalletState>({
     connected: false,
     address: '',
     network: 'devnet',
     provider: null
   })
+  const walletAvailable = multiversxService.isWalletAvailable()
 
   const safeCollectionItems = collectionItems || []
   const safeNfts = nfts || []
   const selectedItem = safeCollectionItems.find(i => i.id === selectedItemId)
 
-  const handleConnect = async (provider: 'xportal' | 'defi') => {
-    try {
-      const mockAddress = 'erd1' + Array.from({ length: 58 }, () =>
-        'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
-      ).join('')
+  useEffect(() => {
+    let active = true
+    multiversxService.onAccountChange((account) => {
+      if (!active) return
+      if (account) {
+        setWalletState(prev => ({ ...prev, connected: true, address: account }))
+      } else {
+        setWalletState(prev => ({ ...prev, connected: false, address: '', provider: null }))
+      }
+    })
+    return () => { active = false }
+  }, [])
 
+  const handleConnect = async (provider: 'xportal' | 'defi') => {
+    setIsConnecting(true)
+    try {
+      const address = await multiversxService.connectWallet()
       setWalletState({
         connected: true,
-        address: mockAddress,
+        address,
         network: walletState.network,
         provider
       })
@@ -72,33 +87,50 @@ export default function MultiversXNFTSection() {
       toast.error('Failed to connect wallet', {
         description: error instanceof Error ? error.message : 'Unknown error'
       })
+    } finally {
+      setIsConnecting(false)
     }
   }
 
   const handleDisconnect = () => {
+    multiversxService.disconnectWallet()
     setWalletState({ connected: false, address: '', network: walletState.network, provider: null })
     toast.info('Wallet disconnected')
   }
 
   const handleNetworkChange = (network: MultiversXNetwork) => {
+    multiversxService.setNetwork(network)
     setWalletState(prev => ({ ...prev, network }))
     toast.info(`Switched to ${network}`)
+  }
+
+  const handleContractAddressChange = (address: string) => {
+    setContractAddress(address)
+    // MultiversX bech32 addresses start with erd1 and are 62 characters long
+    if (address.startsWith('erd1') && address.length === 62) {
+      multiversxService.setContractAddress(address)
+    }
   }
 
   const handleMint = async () => {
     if (!selectedItem || !walletState.connected) return
     setIsMinting(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const tokenId = `VINYL-${Date.now().toString(36).toUpperCase()}-01`
+      const result = await multiversxService.mintRecordNFT(tokenId, {
+        artist: selectedItem.artistName,
+        title: selectedItem.releaseTitle,
+        year: selectedItem.year || '',
+        catno: selectedItem.catalogNumber || '',
+        condition: selectedItem.condition.mediaGrade || '',
+      })
       const newNFT: MultiversXNFT = {
         id: crypto.randomUUID(),
         itemId: selectedItem.id,
-        tokenId: `VINYL-${Date.now().toString(36).toUpperCase()}-01`,
+        tokenId: result.tokenId,
         artistName: selectedItem.artistName,
         releaseTitle: selectedItem.releaseTitle,
-        txHash: Array.from({ length: 64 }, () =>
-          '0123456789abcdef'[Math.floor(Math.random() * 16)]
-        ).join(''),
+        txHash: result.txHash,
         network: walletState.network,
         mintedAt: new Date().toISOString()
       }
@@ -108,9 +140,16 @@ export default function MultiversXNFTSection() {
         description: `${selectedItem.artistName} - ${selectedItem.releaseTitle}`
       })
     } catch (error) {
-      toast.error('Minting failed', {
-        description: error instanceof Error ? error.message : 'Unknown error'
-      })
+      const err = error as Error & { code?: string }
+      if (err.code === 'CONTRACT_NOT_CONFIGURED') {
+        toast.error('Contract not configured', {
+          description: 'Enter a valid MultiversX contract address above before minting.'
+        })
+      } else {
+        toast.error('Minting failed', {
+          description: err.message || 'Unknown error'
+        })
+      }
     } finally {
       setIsMinting(false)
     }
@@ -158,6 +197,17 @@ export default function MultiversXNFTSection() {
             </Select>
           </div>
 
+          {!walletAvailable && (
+            <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <Warning size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-yellow-300">
+                No MultiversX wallet extension detected. Install the{' '}
+                <a href="https://chromewebstore.google.com/detail/multiversx-defi-wallet" target="_blank" rel="noopener noreferrer" className="underline">xPortal / DeFi Wallet</a>{' '}
+                extension to connect.
+              </p>
+            </div>
+          )}
+
           {walletState.connected ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -183,18 +233,20 @@ export default function MultiversXNFTSection() {
             <div className="space-y-2">
               <Button
                 onClick={() => handleConnect('xportal')}
+                disabled={isConnecting}
                 variant="outline"
                 className="w-full gap-2 bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-blue-300"
               >
-                <Globe size={18} />
+                {isConnecting ? <SpinnerGap size={18} className="animate-spin" /> : <Globe size={18} />}
                 Connect xPortal
               </Button>
               <Button
                 onClick={() => handleConnect('defi')}
+                disabled={isConnecting}
                 variant="outline"
                 className="w-full gap-2 bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-300"
               >
-                <Wallet size={18} />
+                {isConnecting ? <SpinnerGap size={18} className="animate-spin" /> : <Wallet size={18} />}
                 Connect DeFi Wallet
               </Button>
             </div>
@@ -219,7 +271,7 @@ export default function MultiversXNFTSection() {
               <label className="text-xs text-slate-400">Contract Address</label>
               <Input
                 value={contractAddress}
-                onChange={(e) => setContractAddress(e.target.value)}
+                onChange={(e) => handleContractAddressChange(e.target.value)}
                 placeholder="erd1qqqqqqqqqqqqq..."
                 className="bg-slate-800/50 border-slate-700 text-white font-mono text-xs"
               />

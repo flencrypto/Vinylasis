@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,10 +12,12 @@ import {
   CurrencyBtc,
   CheckCircle,
   SpinnerGap,
-  Info
+  Info,
+  Warning
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { CollectionItem } from '@/lib/types'
+import { bitcoinOrdinalsService } from '@/lib/bitcoin-ordinals-service'
 
 interface BitcoinOrdinal {
   id: string
@@ -26,6 +28,8 @@ interface BitcoinOrdinal {
   inscriptionType: string
   txHash: string
   network: 'mainnet' | 'testnet'
+  onChain?: boolean
+  note?: string
   mintedAt: string
 }
 
@@ -41,6 +45,7 @@ export default function BitcoinNFTSection() {
   const [ordinals, setOrdinals] = useKV<BitcoinOrdinal[]>('vinyl-vault-bitcoin-ordinals', [])
   const [selectedItemId, setSelectedItemId] = useState<string>('')
   const [isMinting, setIsMinting] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
   const [walletState, setWalletState] = useState<BitcoinWalletState>({
     connected: false,
     address: '',
@@ -48,20 +53,32 @@ export default function BitcoinNFTSection() {
     provider: null
   })
   const [feeRate] = useState(12)
+  const walletAvailable = bitcoinOrdinalsService.isWalletAvailable()
 
   const safeCollectionItems = collectionItems || []
   const safeOrdinals = ordinals || []
   const selectedItem = safeCollectionItems.find(i => i.id === selectedItemId)
 
-  const handleConnect = async (provider: 'unisat' | 'xverse') => {
-    try {
-      const mockAddress = 'bc1q' + Array.from({ length: 38 }, () =>
-        'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
-      ).join('')
+  useEffect(() => {
+    let active = true
+    bitcoinOrdinalsService.onAccountChange((account) => {
+      if (!active) return
+      if (account) {
+        setWalletState(prev => ({ ...prev, connected: true, address: account }))
+      } else {
+        setWalletState({ connected: false, address: '', network: 'testnet', provider: null })
+      }
+    })
+    return () => { active = false }
+  }, [])
 
+  const handleConnect = async (provider: 'unisat' | 'xverse') => {
+    setIsConnecting(true)
+    try {
+      const address = await bitcoinOrdinalsService.connectWallet()
       setWalletState({
         connected: true,
-        address: mockAddress,
+        address,
         network: 'testnet',
         provider
       })
@@ -70,10 +87,13 @@ export default function BitcoinNFTSection() {
       toast.error('Failed to connect wallet', {
         description: error instanceof Error ? error.message : 'Unknown error'
       })
+    } finally {
+      setIsConnecting(false)
     }
   }
 
   const handleDisconnect = () => {
+    bitcoinOrdinalsService.disconnectWallet()
     setWalletState({ connected: false, address: '', network: 'testnet', provider: null })
     toast.info('Wallet disconnected')
   }
@@ -82,24 +102,31 @@ export default function BitcoinNFTSection() {
     if (!selectedItem || !walletState.connected) return
     setIsMinting(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const tokenId = `ord-${Date.now().toString(36)}`
+      const result = await bitcoinOrdinalsService.mintRecordNFT(tokenId, {
+        artist: selectedItem.artistName,
+        title: selectedItem.releaseTitle,
+        year: selectedItem.year || '',
+        catno: selectedItem.catalogNumber || '',
+        condition: selectedItem.condition.mediaGrade || '',
+      })
       const newOrdinal: BitcoinOrdinal = {
         id: crypto.randomUUID(),
         itemId: selectedItem.id,
-        tokenId: `ord-${Date.now().toString(36)}`,
+        tokenId: result.tokenId,
         artistName: selectedItem.artistName,
         releaseTitle: selectedItem.releaseTitle,
         inscriptionType: 'vinyl-certificate',
-        txHash: Array.from({ length: 64 }, () =>
-          '0123456789abcdef'[Math.floor(Math.random() * 16)]
-        ).join(''),
+        txHash: result.txHash,
         network: walletState.network,
+        onChain: result.onChain !== false,
+        note: result.note,
         mintedAt: new Date().toISOString()
       }
       setOrdinals(current => [...(current || []), newOrdinal])
       setSelectedItemId('')
       toast.success('Ordinal inscribed!', {
-        description: `${selectedItem.artistName} - ${selectedItem.releaseTitle} inscribed on Bitcoin`
+        description: result.note || `${selectedItem.artistName} - ${selectedItem.releaseTitle} inscribed on Bitcoin`
       })
     } catch (error) {
       toast.error('Inscription failed', {
@@ -129,6 +156,17 @@ export default function BitcoinNFTSection() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!walletAvailable && (
+            <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg mb-3">
+              <Warning size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-yellow-300">
+                No Bitcoin wallet extension detected. Install{' '}
+                <a href="https://unisat.io" target="_blank" rel="noopener noreferrer" className="underline">Unisat</a>{' '}or{' '}
+                <a href="https://xverse.app" target="_blank" rel="noopener noreferrer" className="underline">Xverse</a>{' '}
+                to connect.
+              </p>
+            </div>
+          )}
           {walletState.connected ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -158,18 +196,20 @@ export default function BitcoinNFTSection() {
             <div className="space-y-2">
               <Button
                 onClick={() => handleConnect('unisat')}
+                disabled={isConnecting}
                 variant="outline"
                 className="w-full gap-2 bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20 text-orange-300"
               >
-                <CurrencyBtc size={18} />
+                {isConnecting ? <SpinnerGap size={18} className="animate-spin" /> : <CurrencyBtc size={18} />}
                 Connect Unisat
               </Button>
               <Button
                 onClick={() => handleConnect('xverse')}
+                disabled={isConnecting}
                 variant="outline"
                 className="w-full gap-2 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-300"
               >
-                <Wallet size={18} />
+                {isConnecting ? <SpinnerGap size={18} className="animate-spin" /> : <Wallet size={18} />}
                 Connect Xverse
               </Button>
             </div>
