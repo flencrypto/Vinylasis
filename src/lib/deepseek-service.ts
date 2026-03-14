@@ -54,20 +54,26 @@ export class DeepSeekService {
       if (!raw) return
 
       const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-      const deepseekConfig = parsed?.deepseek
-      if (!deepseekConfig || typeof deepseekConfig !== 'object') return
+      if (!parsed || typeof parsed !== 'object') return
 
-      const kvApiKey = typeof deepseekConfig.apiKey === 'string' ? deepseekConfig.apiKey : null
-      const kvModel = typeof deepseekConfig.model === 'string' ? deepseekConfig.model : null
+      // SettingsView stores camelCase keys at the top level (e.g. deepseekApiKey)
+      const kvApiKey = typeof parsed.deepseekApiKey === 'string' ? parsed.deepseekApiKey : null
+      // Also support legacy nested format for backwards compatibility
+      const legacyApiKey = typeof parsed.deepseek?.apiKey === 'string' ? parsed.deepseek.apiKey : null
+      const kvModel = typeof parsed.deepseekModel === 'string' ? parsed.deepseekModel : null
+      const legacyModel = typeof parsed.deepseek?.model === 'string' ? parsed.deepseek.model : null
 
-      if (kvApiKey) {
-        this.apiKey = kvApiKey
-        localStorage.setItem('deepseek_api_key', kvApiKey)
+      const resolvedApiKey = kvApiKey || legacyApiKey
+      const resolvedModel = kvModel || legacyModel
+
+      if (resolvedApiKey) {
+        this.apiKey = resolvedApiKey
+        localStorage.setItem('deepseek_api_key', resolvedApiKey)
       }
 
-      if (kvModel) {
-        this.model = kvModel
-        localStorage.setItem('deepseek_model', kvModel)
+      if (resolvedModel) {
+        this.model = resolvedModel
+        localStorage.setItem('deepseek_model', resolvedModel)
       }
     } catch {
       // Ignore KV errors; service will continue to rely on localStorage.
@@ -87,22 +93,15 @@ export class DeepSeekService {
         : {}
 
       const current = typeof existing === 'object' && existing !== null ? existing : {}
-      const deepseekConfig = typeof current.deepseek === 'object' && current.deepseek !== null
-        ? current.deepseek
-        : {}
 
-      const updatedDeepseek = {
-        ...deepseekConfig,
-        ...(partial.apiKey !== undefined ? { apiKey: partial.apiKey } : {}),
-        ...(partial.model !== undefined ? { model: partial.model } : {})
-      }
-
+      // Store as top-level camelCase keys to align with SettingsView schema
       const updatedConfig = {
         ...current,
-        deepseek: updatedDeepseek
+        ...(partial.apiKey !== undefined ? { deepseekApiKey: partial.apiKey } : {}),
+        ...(partial.model !== undefined ? { deepseekModel: partial.model } : {})
       }
 
-      await sparkKv.set(this.KV_STORAGE_KEY, JSON.stringify(updatedConfig))
+      await sparkKv.set(this.KV_STORAGE_KEY, updatedConfig)
     } catch {
       // Ignore KV errors; failure to persist to KV should not break normal operation.
     }

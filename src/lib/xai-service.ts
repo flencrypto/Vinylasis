@@ -30,11 +30,11 @@ export class XAIService {
   }
 
   /**
-   * Load xAI credentials from localStorage.
+   * Load xAI credentials from localStorage, with Spark KV fallback.
    *
    * Priority:
    *  1. Direct keys: 'xai_api_key' and 'xai_model'
-   *  2. Fallback KV blob: 'vinyl-vault-api-keys' (if it contains xAI entries)
+   *  2. Fallback: Spark KV object with camelCase keys (xaiApiKey, xaiModel)
    */
   private loadCredentialsFromStorage() {
     try {
@@ -49,22 +49,37 @@ export class XAIService {
         this.model = directModel
       }
 
-      // Fallback: keys stored in the Spark KV-style blob
-      if (!this.apiKey || !this.model) {
-        const kvRaw = localStorage.getItem('vinyl-vault-api-keys')
-        if (kvRaw) {
-          const parsed = JSON.parse(kvRaw)
-
-          if (!this.apiKey && typeof parsed.xai_api_key === 'string') {
-            this.apiKey = parsed.xai_api_key
-          }
-          if (!directModel && typeof parsed.xai_model === 'string') {
-            this.model = parsed.xai_model
-          }
-        }
+      // Fallback: try to hydrate from Spark KV via globalThis
+      if (!directApiKey || !directModel) {
+        void this._syncFromKv()
       }
     } catch {
-      // If anything goes wrong (e.g. malformed JSON), fall back to defaults
+      // If anything goes wrong, fall back to defaults
+    }
+  }
+
+  private async _syncFromKv(): Promise<void> {
+    const sparkKv = (globalThis as any)?.spark?.kv
+    if (!sparkKv || typeof sparkKv.get !== 'function') return
+
+    try {
+      const raw = await sparkKv.get('vinyl-vault-api-keys')
+      if (!raw) return
+
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+      if (!parsed || typeof parsed !== 'object') return
+
+      // SettingsView stores camelCase keys at the top level
+      if (!this.apiKey && typeof parsed.xaiApiKey === 'string') {
+        this.apiKey = parsed.xaiApiKey
+        localStorage.setItem('xai_api_key', parsed.xaiApiKey)
+      }
+      if (typeof parsed.xaiModel === 'string' && parsed.xaiModel) {
+        this.model = parsed.xaiModel
+        localStorage.setItem('xai_model', parsed.xaiModel)
+      }
+    } catch {
+      // Ignore KV errors
     }
   }
 

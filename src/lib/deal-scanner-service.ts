@@ -299,8 +299,8 @@ class DealScannerService {
             )
             if (!marketValue || price <= 0) continue
 
-            const ebayFee = this._estimateFees(price)
-            const netProfit = marketValue - price - ebayFee
+            const discogsFee = price * 0.08
+            const netProfit = marketValue - price - discogsFee
             const roi = price > 0 ? parseFloat(((netProfit / price) * 100).toFixed(1)) : 0
 
             const deal: Deal = {
@@ -314,7 +314,7 @@ class DealScannerService {
               marketValue,
               netProfit: Math.round(netProfit * 100) / 100,
               roi,
-              fees: Math.round(ebayFee * 100) / 100,
+              fees: Math.round(discogsFee * 100) / 100,
               source: 'Discogs',
               discogsListingId: String(listing.id),
               discogsReleaseId: releaseId,
@@ -410,24 +410,26 @@ class DealScannerService {
 
   /**
    * Trigger an immediate scan across the collection.
-   * @returns number of deals notified via Telegram
+   * Manual scans always run regardless of the enabled toggle.
+   * @returns object with notified count and found deals
    */
-  async scanNow(): Promise<number> {
-    if (this._scanning) return 0
+  async scanNow(): Promise<{ notified: number; deals: Deal[] }> {
+    if (this._scanning) return { notified: 0, deals: [] }
     this._scanning = true
     localStorage.setItem('deal_scanner_last_run', new Date().toISOString())
 
     let notified = 0
+    const allDeals: Deal[] = []
 
     try {
       const config = this._getConfig()
-      if (!config.enabled) return 0
-
+      // For manual scans, use the config thresholds but don't gate on enabled
       const collection = this._getCollection()
-      if (!collection.length) return 0
+      if (!collection.length) return { notified: 0, deals: [] }
 
       for (const record of collection) {
         const deals = await this.scanRecord(record, config)
+        allDeals.push(...deals)
 
         for (const deal of deals) {
           if (telegramService.isConfigured) {
@@ -443,7 +445,7 @@ class DealScannerService {
       this._scanning = false
     }
 
-    return notified
+    return { notified, deals: allDeals }
   }
 
   /**

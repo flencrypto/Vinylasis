@@ -61,7 +61,7 @@ export default function MultiversXNFTSection() {
 
   useEffect(() => {
     let active = true
-    multiversxService.onAccountChange((account) => {
+    const unsubscribe = multiversxService.onAccountChange((account) => {
       if (!active) return
       if (account) {
         setWalletState(prev => ({ ...prev, connected: true, address: account }))
@@ -69,20 +69,24 @@ export default function MultiversXNFTSection() {
         setWalletState(prev => ({ ...prev, connected: false, address: '', provider: null }))
       }
     })
-    return () => { active = false }
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [])
 
   const handleConnect = async (provider: 'xportal' | 'defi') => {
     setIsConnecting(true)
     try {
       const address = await multiversxService.connectWallet()
+      const actualProvider = multiversxService.getProviderType() || provider
       setWalletState({
         connected: true,
         address,
         network: walletState.network,
-        provider
+        provider: actualProvider
       })
-      toast.success(`${provider === 'xportal' ? 'xPortal' : 'DeFi Wallet'} connected`)
+      toast.success(`${actualProvider === 'xportal' ? 'xPortal' : 'DeFi Wallet'} connected`)
     } catch (error) {
       toast.error('Failed to connect wallet', {
         description: error instanceof Error ? error.message : 'Unknown error'
@@ -125,7 +129,9 @@ export default function MultiversXNFTSection() {
         condition: selectedItem.condition.mediaGrade || '',
       })
       const newNFT: MultiversXNFT = {
-        id: crypto.randomUUID(),
+        id: typeof crypto?.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `mvx-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         itemId: selectedItem.id,
         tokenId: result.tokenId,
         artistName: selectedItem.artistName,

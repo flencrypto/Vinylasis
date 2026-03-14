@@ -90,10 +90,17 @@ class WebScrapingService {
   }
 
   private _loadConfig(): ScrapingConfig {
+    let proxyList: string[] = []
+    try {
+      proxyList = JSON.parse(localStorage.getItem('web_scraping_proxy_list') || '[]')
+    } catch {
+      proxyList = []
+    }
+
     return {
       enabled: localStorage.getItem('web_scraping_enabled') === 'true',
       proxyEnabled: localStorage.getItem('web_scraping_proxy_enabled') === 'true',
-      proxyList: JSON.parse(localStorage.getItem('web_scraping_proxy_list') || '[]'),
+      proxyList,
       antiDetection: localStorage.getItem('web_scraping_anti_detection') === 'true',
       maxRetries: parseInt(localStorage.getItem('web_scraping_max_retries') || '3', 10),
       timeout: parseInt(localStorage.getItem('web_scraping_timeout') || '30', 10),

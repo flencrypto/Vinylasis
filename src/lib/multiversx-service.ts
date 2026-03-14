@@ -157,6 +157,14 @@ export const multiversxService = {
     return _account ? _account.slice(0, 8) + '…' + _account.slice(-4) : ''
   },
 
+  /** Detect which wallet provider is connected. */
+  getProviderType(): 'xportal' | 'defi' | null {
+    if (!_wallet) return null
+    if (typeof window !== 'undefined' && _wallet === window.multiversx) return 'xportal'
+    if (typeof window !== 'undefined' && _wallet === window.elrondWallet) return 'defi'
+    return 'xportal' // default if we can't distinguish
+  },
+
   isWalletAvailable: _isMvrxWalletAvailable,
 
   /**
@@ -272,9 +280,13 @@ export const multiversxService = {
     return { txHash, tokenId, explorerUrl }
   },
 
-  onAccountChange(callback: AccountChangeCallback): void {
+  onAccountChange(callback: AccountChangeCallback): () => void {
     if (typeof callback === 'function') {
       _listeners.accountChange.push(callback)
+    }
+    return () => {
+      const idx = _listeners.accountChange.indexOf(callback)
+      if (idx !== -1) _listeners.accountChange.splice(idx, 1)
     }
   },
 

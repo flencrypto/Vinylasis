@@ -84,6 +84,7 @@ type AccountChangeCallback = (account: string | null) => void
 
 let _account: string | null = null
 let _walletType: WalletType = null
+let _unisatListenerRegistered = false
 
 const _listeners: { accountChange: AccountChangeCallback[] } = {
   accountChange: [],
@@ -127,6 +128,10 @@ export const bitcoinOrdinalsService = {
     return _account ? _account.slice(0, 6) + '…' + _account.slice(-4) : ''
   },
 
+  getWalletType(): WalletType {
+    return _walletType
+  },
+
   isWalletAvailable: _isBitcoinWalletAvailable,
 
   /**
@@ -146,11 +151,14 @@ export const bitcoinOrdinalsService = {
       accounts = await window.unisat.requestAccounts()
       _walletType = 'unisat'
 
-      window.unisat.on('accountsChanged', (accs: unknown) => {
-        const list = accs as string[]
-        _account = list.length > 0 ? list[0] : null
-        _notifyAccountChange(_account)
-      })
+      if (!_unisatListenerRegistered) {
+        _unisatListenerRegistered = true
+        window.unisat.on('accountsChanged', (accs: unknown) => {
+          const list = accs as string[]
+          _account = list.length > 0 ? list[0] : null
+          _notifyAccountChange(_account)
+        })
+      }
     } else {
       const provider = window.XverseProviders!.BitcoinProvider!
       const response = await provider.connect({
@@ -241,9 +249,13 @@ export const bitcoinOrdinalsService = {
     }
   },
 
-  onAccountChange(callback: AccountChangeCallback): void {
+  onAccountChange(callback: AccountChangeCallback): () => void {
     if (typeof callback === 'function') {
       _listeners.accountChange.push(callback)
+    }
+    return () => {
+      const idx = _listeners.accountChange.indexOf(callback)
+      if (idx !== -1) _listeners.accountChange.splice(idx, 1)
     }
   },
 

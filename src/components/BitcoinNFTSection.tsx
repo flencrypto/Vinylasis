@@ -52,7 +52,7 @@ export default function BitcoinNFTSection() {
     network: 'testnet',
     provider: null
   })
-  const [feeRate] = useState(12)
+  const [feeRate] = useState(10)
   const walletAvailable = bitcoinOrdinalsService.isWalletAvailable()
 
   const safeCollectionItems = collectionItems || []
@@ -61,7 +61,7 @@ export default function BitcoinNFTSection() {
 
   useEffect(() => {
     let active = true
-    bitcoinOrdinalsService.onAccountChange((account) => {
+    const unsubscribe = bitcoinOrdinalsService.onAccountChange((account) => {
       if (!active) return
       if (account) {
         setWalletState(prev => ({ ...prev, connected: true, address: account }))
@@ -69,20 +69,24 @@ export default function BitcoinNFTSection() {
         setWalletState({ connected: false, address: '', network: 'testnet', provider: null })
       }
     })
-    return () => { active = false }
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [])
 
   const handleConnect = async (provider: 'unisat' | 'xverse') => {
     setIsConnecting(true)
     try {
       const address = await bitcoinOrdinalsService.connectWallet()
+      const actualProvider = bitcoinOrdinalsService.getWalletType() || provider
       setWalletState({
         connected: true,
         address,
         network: 'testnet',
-        provider
+        provider: actualProvider
       })
-      toast.success(`${provider === 'unisat' ? 'Unisat' : 'Xverse'} wallet connected`)
+      toast.success(`${actualProvider === 'unisat' ? 'Unisat' : 'Xverse'} wallet connected`)
     } catch (error) {
       toast.error('Failed to connect wallet', {
         description: error instanceof Error ? error.message : 'Unknown error'
@@ -111,7 +115,9 @@ export default function BitcoinNFTSection() {
         condition: selectedItem.condition.mediaGrade || '',
       })
       const newOrdinal: BitcoinOrdinal = {
-        id: crypto.randomUUID(),
+        id: typeof crypto?.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `ord-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         itemId: selectedItem.id,
         tokenId: result.tokenId,
         artistName: selectedItem.artistName,

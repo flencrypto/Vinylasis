@@ -1,9 +1,9 @@
 /**
  * TelegramService — sends deal alerts via the Telegram Bot API.
  *
- * Credentials are read from localStorage keys:
- *   telegram_bot_token  – Bot token from @BotFather
- *   telegram_chat_id    – Chat ID from @userinfobot
+ * Credentials are read from localStorage keys (telegram_bot_token, telegram_chat_id)
+ * with a Spark KV fallback (vinyl-vault-api-keys camelCase fields: telegramBotToken,
+ * telegramChatId) for sync with the Settings UI.
  */
 
 export interface DealInfo {
@@ -54,34 +54,13 @@ class TelegramService {
     let botToken = localStorage.getItem('telegram_bot_token') || ''
     let chatId = localStorage.getItem('telegram_chat_id') || ''
 
-    // If not set, try to hydrate from Spark KV stored under `vinyl-vault-api-keys`
+    // If not set, try to hydrate from Spark KV via globalThis
     if (!botToken || !chatId) {
-      const kvRaw = localStorage.getItem('vinyl-vault-api-keys')
-      if (kvRaw) {
-        try {
-          const kv = JSON.parse(kvRaw)
-          if (!botToken && typeof kv.telegram_bot_token === 'string') {
-            botToken = kv.telegram_bot_token
-          }
-          if (!chatId && typeof kv.telegram_chat_id === 'string') {
-            chatId = kv.telegram_chat_id
-          }
-        } catch {
-          // Ignore malformed KV; fall back to empty credentials
-        }
-      }
+      void this._syncFromKv()
     }
 
     this.botToken = botToken
     this.chatId = chatId
-
-    // Backfill dedicated keys if we populated from KV
-    if (!localStorage.getItem('telegram_bot_token') && this.botToken) {
-      localStorage.setItem('telegram_bot_token', this.botToken)
-    }
-    if (!localStorage.getItem('telegram_chat_id') && this.chatId) {
-      localStorage.setItem('telegram_chat_id', this.chatId)
-    }
 
     this._notifiedIds = new Set<string>(
       JSON.parse(localStorage.getItem('deal_scanner_notified_ids') || '[]'),
@@ -89,6 +68,34 @@ class TelegramService {
     this._releaseCooldowns = JSON.parse(
       localStorage.getItem('telegram_release_cooldowns') || '{}',
     )
+  }
+
+  /**
+   * Hydrate credentials from Spark KV (camelCase keys as stored by SettingsView).
+   */
+  private async _syncFromKv(): Promise<void> {
+    const sparkKv = (globalThis as any)?.spark?.kv
+    if (!sparkKv || typeof sparkKv.get !== 'function') return
+
+    try {
+      const raw = await sparkKv.get('vinyl-vault-api-keys')
+      if (!raw) return
+
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+      if (!parsed || typeof parsed !== 'object') return
+
+      // SettingsView stores camelCase keys at the top level
+      if (!this.botToken && typeof parsed.telegramBotToken === 'string') {
+        this.botToken = parsed.telegramBotToken
+        localStorage.setItem('telegram_bot_token', this.botToken)
+      }
+      if (!this.chatId && typeof parsed.telegramChatId === 'string') {
+        this.chatId = parsed.telegramChatId
+        localStorage.setItem('telegram_chat_id', this.chatId)
+      }
+    } catch {
+      // Ignore KV errors
+    }
   }
 
   // ---------------------------------------------------------------------------
