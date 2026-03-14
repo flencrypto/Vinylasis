@@ -139,7 +139,10 @@ const CONDITION_MULTIPLIERS: Record<string, number> = {
 }
 
 const USER_AGENT = 'VinylVaultPro/1.0'
-const MUSICBRAINZ_USER_AGENT = 'VinylVaultPro/1.0 (contact@example.com)'
+const MUSICBRAINZ_CONTACT_EMAIL = localStorage.getItem('musicbrainz_contact_email') || ''
+const MUSICBRAINZ_USER_AGENT = MUSICBRAINZ_CONTACT_EMAIL
+  ? `VinylVaultPro/1.0 (${MUSICBRAINZ_CONTACT_EMAIL})`
+  : 'VinylVaultPro/1.0'
 
 // ─── Service ───────────────────────────────────────────────────────────────
 
