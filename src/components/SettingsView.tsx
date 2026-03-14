@@ -69,6 +69,43 @@ export default function SettingsView() {
   })
 
   const [notificationsEnabled, setNotificationsEnabled] = useKV<boolean>('vinyl-vault-notifications', true)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const { xaiApiKey, deepseekApiKey, telegramBotToken, telegramChatId } = apiKeys
+
+    if (xaiApiKey) {
+      window.localStorage.setItem('xai_api_key', xaiApiKey)
+    } else {
+      window.localStorage.removeItem('xai_api_key')
+    }
+
+    if (deepseekApiKey) {
+      window.localStorage.setItem('deepseek_api_key', deepseekApiKey)
+    } else {
+      window.localStorage.removeItem('deepseek_api_key')
+    }
+
+    if (telegramBotToken) {
+      window.localStorage.setItem('telegram_bot_token', telegramBotToken)
+    } else {
+      window.localStorage.removeItem('telegram_bot_token')
+    }
+
+    if (telegramChatId) {
+      window.localStorage.setItem('telegram_chat_id', telegramChatId)
+    } else {
+      window.localStorage.removeItem('telegram_chat_id')
+    }
+  }, [
+    apiKeys.xaiApiKey,
+    apiKeys.deepseekApiKey,
+    apiKeys.telegramBotToken,
+    apiKeys.telegramChatId,
+  ])
   const [autoSync, setAutoSync] = useKV<boolean>('vinyl-vault-auto-sync', true)
   
   const [confidenceThresholds, setConfidenceThresholds] = useKV<ConfidenceThresholds>('vinyl-vault-confidence-thresholds', {
