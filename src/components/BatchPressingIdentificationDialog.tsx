@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CollectionItem } from '@/lib/types'
 import { identifyPressing, ScoredPressingCandidate } from '@/lib/pressing-identification-ai'
-import { Lightning, CheckCircle, Warning, X, Disc, Sparkle, Clock, Pause, Play } from '@phosphor-icons/react'
+import { Lightning, CheckCircle, Warning, X, Disc, Sparkle, Clock, Pause, Play, Database } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface BatchIdentificationResult {
@@ -43,6 +43,7 @@ export function BatchPressingIdentificationDialog({
   const [isPaused, setIsPaused] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [processedCount, setProcessedCount] = useState(0)
+  const [apiKeys] = useKV<{ discogsUserToken?: string }>('vinyl-vault-api-keys', {})
   const { thresholds } = useConfidenceThresholds()
 
   useEffect(() => {
@@ -107,9 +108,14 @@ export function BatchPressingIdentificationDialog({
         format: item.format || undefined,
       }
 
+      const [apiKeys] = await Promise.all([
+        spark.kv.get<{ discogsUserToken?: string }>('vinyl-vault-api-keys')
+      ])
+
       const candidates = await identifyPressing({
         manualHints: hints,
-        discogsSearchEnabled: false,
+        discogsSearchEnabled: !!apiKeys?.discogsUserToken,
+        discogsApiToken: apiKeys?.discogsUserToken,
       })
 
       const bestMatch = candidates.length > 0 && 
@@ -129,7 +135,7 @@ export function BatchPressingIdentificationDialog({
 
       if (bestMatch) {
         toast.success(`Found match for ${item.artistName} - ${item.releaseTitle}`, {
-          description: `${Math.round(bestMatch.totalScore * 100)}% confidence`,
+          description: `${Math.round(bestMatch.totalScore * 100)}% confidence${bestMatch.discogsId ? ' (Discogs verified)' : ''}`,
         })
       }
     } catch (error) {
@@ -214,6 +220,22 @@ export function BatchPressingIdentificationDialog({
             Automatically identify pressings for multiple records using AI analysis
           </DialogDescription>
         </DialogHeader>
+
+        {apiKeys?.discogsUserToken ? (
+          <Alert className="bg-accent/10 border-accent">
+            <Database className="text-accent" weight="fill" />
+            <AlertDescription>
+              <span className="font-semibold">Discogs database integration enabled.</span> Batch identification will use real Discogs data for enhanced accuracy and pressing verification.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert>
+            <Database className="text-muted-foreground" />
+            <AlertDescription>
+              Discogs database integration not configured. Add your Discogs Personal Access Token in Settings for real database matching and higher accuracy.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -332,8 +354,8 @@ export function BatchPressingIdentificationDialog({
                         </div>
 
                         {result.bestMatch && (
-                          <div className="mt-2 p-2 bg-background rounded border border-green-600/20">
-                            <div className="flex items-center justify-between">
+                          <div className="mt-2 p-3 bg-background rounded border border-green-600/20">
+                            <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <Sparkle className="text-accent" size={14} weight="fill" />
                                 <span className="text-sm font-medium">
@@ -344,14 +366,43 @@ export function BatchPressingIdentificationDialog({
                                 {Math.round(result.bestMatch.totalScore * 100)}% match
                               </Badge>
                             </div>
+                            
+                            {result.bestMatch.discogsId && (
+                              <div className="space-y-1 mb-2">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Badge variant="secondary" className="text-xs">
+                                    Discogs Verified
+                                  </Badge>
+                                  <span className="text-muted-foreground font-mono">
+                                    ID: {result.bestMatch.discogsId}
+                                  </span>
+                                </div>
+                                {result.bestMatch.discogsVariant && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Variant: {result.bestMatch.discogsVariant}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {result.bestMatch.matchedIdentifiers && result.bestMatch.matchedIdentifiers.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {result.bestMatch.matchedIdentifiers.slice(0, 3).map((id, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs font-mono">
+                                    {id}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+
                             {result.bestMatch.discogsUrl && (
                               <a 
                                 href={result.bestMatch.discogsUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-accent hover:underline mt-1 inline-block"
+                                className="text-xs text-accent hover:underline flex items-center gap-1"
                               >
-                                View on Discogs →
+                                View full details on Discogs →
                               </a>
                             )}
                           </div>
