@@ -50,8 +50,38 @@ class TelegramService {
   private _releaseCooldowns: Record<string, ReleaseCooldownEntry>
 
   constructor() {
-    this.botToken = localStorage.getItem('telegram_bot_token') || ''
-    this.chatId = localStorage.getItem('telegram_chat_id') || ''
+    // Prefer existing dedicated localStorage keys
+    let botToken = localStorage.getItem('telegram_bot_token') || ''
+    let chatId = localStorage.getItem('telegram_chat_id') || ''
+
+    // If not set, try to hydrate from Spark KV stored under `vinyl-vault-api-keys`
+    if (!botToken || !chatId) {
+      const kvRaw = localStorage.getItem('vinyl-vault-api-keys')
+      if (kvRaw) {
+        try {
+          const kv = JSON.parse(kvRaw)
+          if (!botToken && typeof kv.telegram_bot_token === 'string') {
+            botToken = kv.telegram_bot_token
+          }
+          if (!chatId && typeof kv.telegram_chat_id === 'string') {
+            chatId = kv.telegram_chat_id
+          }
+        } catch {
+          // Ignore malformed KV; fall back to empty credentials
+        }
+      }
+    }
+
+    this.botToken = botToken
+    this.chatId = chatId
+
+    // Backfill dedicated keys if we populated from KV
+    if (!localStorage.getItem('telegram_bot_token') && this.botToken) {
+      localStorage.setItem('telegram_bot_token', this.botToken)
+    }
+    if (!localStorage.getItem('telegram_chat_id') && this.chatId) {
+      localStorage.setItem('telegram_chat_id', this.chatId)
+    }
 
     this._notifiedIds = new Set<string>(
       JSON.parse(localStorage.getItem('deal_scanner_notified_ids') || '[]'),
@@ -73,6 +103,23 @@ class TelegramService {
     if (chatId !== undefined) {
       this.chatId = chatId
       localStorage.setItem('telegram_chat_id', chatId)
+    }
+
+    // Keep Spark KV (`vinyl-vault-api-keys`) in sync with the latest credentials
+    try {
+      const kvRaw = localStorage.getItem('vinyl-vault-api-keys')
+      const kv = kvRaw ? JSON.parse(kvRaw) : {}
+
+      if (botToken !== undefined) {
+        kv.telegram_bot_token = this.botToken
+      }
+      if (chatId !== undefined) {
+        kv.telegram_chat_id = this.chatId
+      }
+
+      localStorage.setItem('vinyl-vault-api-keys', JSON.stringify(kv))
+    } catch {
+      // Ignore KV sync errors; core localStorage-based behavior still works
     }
   }
 
