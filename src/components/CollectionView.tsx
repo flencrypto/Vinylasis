@@ -7,6 +7,7 @@ import { ItemDetailDialog } from '@/components/ItemDetailDialog'
 import { ExportGradedItemsDialog } from '@/components/ExportGradedItemsDialog'
 import { MarketTrendsWidget } from '@/components/MarketTrendsWidget'
 import { TrendAlertsDialog } from '@/components/TrendAlertsDialog'
+import { BatchPressingIdentificationDialog } from '@/components/BatchPressingIdentificationDialog'
 import QuickActionsBar from '@/components/QuickActionsBar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, MagnifyingGlass, FunnelSimple, SortAscending, Disc, Export, Bell, TrendUp, TrendDown, Lightning } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, FunnelSimple, SortAscending, Disc, Export, Bell, TrendUp, TrendDown, Lightning, Sparkle } from '@phosphor-icons/react'
 import { calculateCollectionValue, formatCurrency } from '@/lib/helpers'
 import { TrendIndicator } from './TrendIndicator'
 import { generateTrendAlerts, getTrendAlertSummary } from '@/lib/trend-monitoring'
@@ -30,6 +31,7 @@ export default function CollectionView() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [alertsDialogOpen, setAlertsDialogOpen] = useState(false)
+  const [batchIdentifyDialogOpen, setBatchIdentifyDialogOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<CollectionItem | null>(null)
   
   const [searchQuery, setSearchQuery] = useState('')
@@ -218,6 +220,28 @@ export default function CollectionView() {
     setAddDialogOpen(true)
   }
 
+  const handleBatchIdentificationComplete = (results: any[]) => {
+    const matchedResults = results.filter(r => r.bestMatch)
+    
+    setItems((current) => 
+      (current || []).map(item => {
+        const result = results.find(r => r.itemId === item.id)
+        if (result?.bestMatch) {
+          return {
+            ...item,
+            pressingId: result.bestMatch.id,
+            updatedAt: new Date().toISOString(),
+          }
+        }
+        return item
+      })
+    )
+
+    toast.success(`Batch identification complete`, {
+      description: `Matched ${matchedResults.length} of ${results.length} items`,
+    })
+  }
+
   return (
     <div className="pb-6 space-y-0">
       <QuickActionsBar onBarcodeScanned={handleBarcodeScanned} />
@@ -339,6 +363,16 @@ export default function CollectionView() {
           >
             <Export size={18} />
             <span>Export</span>
+          </Button>
+
+          <Button 
+            variant="outline" 
+            onClick={() => setBatchIdentifyDialogOpen(true)} 
+            className="gap-1.5 flex-1 sm:flex-none h-10 bg-gradient-to-r from-accent/10 to-accent/5 border-accent/30 hover:border-accent/50"
+            disabled={(items || []).filter(item => !item.pressingId).length === 0}
+          >
+            <Sparkle size={18} weight="fill" />
+            <span>Batch ID</span>
           </Button>
 
           <Button 
@@ -501,6 +535,13 @@ export default function CollectionView() {
         onDismiss={handleDismissAlert}
         onDismissAll={handleDismissAllAlerts}
         onViewItem={handleViewItemFromAlert}
+      />
+
+      <BatchPressingIdentificationDialog
+        open={batchIdentifyDialogOpen}
+        onOpenChange={setBatchIdentifyDialogOpen}
+        items={(items || []).filter(item => !item.pressingId)}
+        onComplete={handleBatchIdentificationComplete}
       />
     </div>
     </div>
