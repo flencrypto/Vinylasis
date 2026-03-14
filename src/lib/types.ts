@@ -73,6 +73,7 @@ export interface CollectionItem {
   condition: ItemCondition
   images?: string[]
   priceHistory?: PriceHistoryEntry[]
+  estimatedValue?: PriceEstimate
   createdAt: string
   updatedAt: string
 }
