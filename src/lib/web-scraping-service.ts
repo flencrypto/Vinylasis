@@ -336,12 +336,40 @@ class WebScrapingService {
     return this.config.enabled
   }
 
+  /**
+   * Map ScrapingConfig keys to the localStorage keys expected by _loadConfig().
+   * This ensures we persist configuration using the same snake_case keys that
+   * are used when loading, avoiding mismatches between reads and writes.
+   */
+  private _configKeyToStorageKey(key: keyof ScrapingConfig): string {
+    switch (key) {
+      case 'enabled':
+        return 'web_scraping_enabled'
+      case 'proxyEnabled':
+        return 'web_scraping_proxy_enabled'
+      case 'proxyList':
+        return 'web_scraping_proxy_list'
+      case 'antiDetection':
+        return 'web_scraping_anti_detection'
+      case 'maxRetries':
+        return 'web_scraping_max_retries'
+      case 'timeout':
+        return 'web_scraping_timeout'
+      case 'cacheEnabled':
+        return 'web_scraping_cache_enabled'
+      default:
+        // Fallback for any future keys: keep previous behaviour.
+        return `web_scraping_${key as string}`
+    }
+  }
+
   updateConfig(newConfig: Partial<ScrapingConfig>): void {
     this.config = { ...this.config, ...newConfig }
 
     for (const [key, value] of Object.entries(newConfig)) {
+      const storageKey = this._configKeyToStorageKey(key as keyof ScrapingConfig)
       localStorage.setItem(
-        `web_scraping_${key}`,
+        storageKey,
         typeof value === 'object' ? JSON.stringify(value) : String(value),
       )
     }
