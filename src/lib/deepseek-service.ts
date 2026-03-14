@@ -59,12 +59,12 @@ export class DeepSeekService {
       // SettingsView stores camelCase keys at the top level (e.g. deepseekApiKey)
       const kvApiKey = typeof parsed.deepseekApiKey === 'string' ? parsed.deepseekApiKey : null
       // Also support legacy nested format for backwards compatibility
-      const legacyApiKey = typeof parsed.deepseek?.apiKey === 'string' ? parsed.deepseek.apiKey : null
+      const legacyApiKey = parsed.deepseek?.apiKey
       const kvModel = typeof parsed.deepseekModel === 'string' ? parsed.deepseekModel : null
-      const legacyModel = typeof parsed.deepseek?.model === 'string' ? parsed.deepseek.model : null
+      const legacyModel = parsed.deepseek?.model
 
-      const resolvedApiKey = kvApiKey || legacyApiKey
-      const resolvedModel = kvModel || legacyModel
+      const resolvedApiKey = kvApiKey || (typeof legacyApiKey === 'string' ? legacyApiKey : null)
+      const resolvedModel = kvModel || (typeof legacyModel === 'string' ? legacyModel : null)
 
       if (resolvedApiKey) {
         this.apiKey = resolvedApiKey

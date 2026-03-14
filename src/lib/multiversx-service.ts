@@ -162,7 +162,7 @@ export const multiversxService = {
     if (!_wallet) return null
     if (typeof window !== 'undefined' && _wallet === window.multiversx) return 'xportal'
     if (typeof window !== 'undefined' && _wallet === window.elrondWallet) return 'defi'
-    return 'xportal' // default if we can't distinguish
+    return null
   },
 
   isWalletAvailable: _isMvrxWalletAvailable,
