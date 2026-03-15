@@ -79,7 +79,14 @@ function createBrowserWalletSigner(walletAddress: string, walletType: string): U
   }
 }
 
-export async function uploadMetadataToArweave(metadata: SolanaNFTMetadata): Promise<string> {
+/**
+ * Upload NFT metadata JSON to IPFS via the Pinata API and return a public
+ * IPFS gateway URL.  Requires a Pinata JWT stored in Spark KV under the key
+ * `vinyl-vault-api-keys` → `pinataJwt`.
+ *
+ * @throws if no Pinata JWT is configured or the upload fails
+ */
+export async function uploadNFTMetadataToIPFS(metadata: SolanaNFTMetadata): Promise<string> {
   let pinataJwt: string | undefined
   try {
     const sparkKv = (globalThis as any)?.spark?.kv
@@ -134,27 +141,24 @@ export async function mintNFTWithMetaplex(
   network: SolanaNetwork = 'devnet'
 ): Promise<MetaplexMintResult> {
   try {
-    // Resolve the connected browser wallet so the transaction can be signed
-    const wallet = await getWalletAdapter(walletType)
-    if (!wallet || !wallet.publicKey) {
-      throw new Error('Wallet not connected. Please connect your wallet and try again.')
-    }
-
     const rpcEndpoint = SOLANA_NETWORKS[network]
     const umi = createUmi(rpcEndpoint).use(mplCore())
 
-    // Attach the connected browser wallet as Umi's identity signer so that
-    // it pays transaction fees and acts as the NFT authority.
+    // Wire the connected browser wallet as Umi's identity/fee-payer signer so
+    // that it signs and pays for the transaction.
     const walletSigner = createBrowserWalletSigner(walletAddress, walletType)
     umi.use(signerIdentity(walletSigner))
-    
+
+    // Upload metadata to IPFS via Pinata — returns a real, accessible URL
     const metadata = buildNFTMetadata(config)
-    const metadataUri = await uploadMetadataToArweave(metadata)
+    const metadataUri = await uploadNFTMetadataToIPFS(metadata)
 
     const assetSigner = generateSigner(umi)
     const ownerPublicKey = umiPublicKey(walletAddress)
 
-    const createInstruction = createV1(umi, {
+    // Build, sign with both the asset keypair and the wallet identity,
+    // then broadcast via Umi's RPC (which routes through the wallet signer).
+    const { signature } = await createV1(umi, {
       asset: assetSigner,
       owner: ownerPublicKey,
       name: config.name,
@@ -172,18 +176,13 @@ export async function mintNFTWithMetaplex(
           },
         }),
       ],
-    })
-
-    // Build the transaction and pre-sign it with the asset keypair (required for
-    // MPL Core createV1), then have the connected wallet add its signature as
-    // fee payer/owner and broadcast.
-    const tx = await createInstruction.buildAndSign(umi)
-    const signature = await wallet.signAndSendTransaction(tx)
+    }).sendAndConfirm(umi)
 
     return {
       success: true,
       mintAddress: assetSigner.publicKey.toString(),
-      transactionSignature: base58.deserialize(tx.signature)[0],
+      // signature is a Uint8Array — convert to base58 string for display/lookup
+      transactionSignature: base58.deserialize(signature)[0],
       metadataUri,
     }
   } catch (error) {

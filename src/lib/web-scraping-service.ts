@@ -222,7 +222,7 @@ class WebScrapingService {
       return result.results as RawScrapedItem[]
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('API request timed out after 30 seconds')
+        throw new Error(`API request timed out after ${timeoutMs / 1000} seconds`)
       }
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error(

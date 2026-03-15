@@ -16,6 +16,7 @@
 
 import { telegramService } from './telegram-service'
 import { webScrapingService } from './web-scraping-service'
+import type { CollectionItem } from './types'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,19 +106,26 @@ class DealScannerService {
   }
 
   private async _getCollection(): Promise<ScanRecord[]> {
-    // Prefer Spark KV — same store as the rest of the app ('vinyl-vault-collection')
+    // Prefer Spark KV — same store as the rest of the app ('vinyl-vault-collection').
+    // The KV store holds CollectionItem objects, so map their fields to the
+    // ScanRecord shape expected by scanRecord().
     try {
       const sparkKv = (globalThis as any)?.spark?.kv
       if (sparkKv && typeof sparkKv.get === 'function') {
-        const kvCollection = await sparkKv.get('vinyl-vault-collection') as ScanRecord[] | undefined
-        if (Array.isArray(kvCollection)) {
-          return kvCollection
+        const kvCollection = await sparkKv.get('vinyl-vault-collection') as CollectionItem[] | undefined
+        if (Array.isArray(kvCollection) && kvCollection.length > 0) {
+          return kvCollection.map((item): ScanRecord => ({
+            artist: item.artistName,
+            title: item.releaseTitle,
+            discogsReleaseId: item.discogsReleaseId != null ? String(item.discogsReleaseId) : undefined,
+            marketValue: item.estimatedValue?.estimateMid ?? 0,
+          }))
         }
       }
     } catch {
       // Fall through to legacy localStorage key
     }
-    // Legacy fallback
+    // Legacy fallback — this key stores records already in ScanRecord shape
     try {
       return JSON.parse(localStorage.getItem('vinyl_collection') || '[]')
     } catch {
