@@ -75,8 +75,8 @@ export async function mintNFTWithMetaplex(
 
     return {
       success: true,
-      mintAddress: assetSigner.publicKey,
-      transactionSignature: tx.signature,
+      mintAddress: String(assetSigner.publicKey),
+      transactionSignature: String(tx.signature),
       metadataUri,
     }
   } catch (error) {

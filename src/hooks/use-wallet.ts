@@ -6,38 +6,6 @@ export interface WalletConnection {
   connected: boolean
 }
 
-declare global {
-  interface Window {
-    solana?: {
-      isPhantom?: boolean
-      connect: () => Promise<{ publicKey: { toString: () => string } }>
-      disconnect: () => Promise<void>
-      on: (event: string, callback: () => void) => void
-      off: (event: string, callback: () => void) => void
-      publicKey?: { toString: () => string } | null
-      isConnected?: boolean
-    }
-    solflare?: {
-      isSolflare?: boolean
-      connect: () => Promise<{ publicKey: { toString: () => string } }>
-      disconnect: () => Promise<void>
-      on: (event: string, callback: () => void) => void
-      off: (event: string, callback: () => void) => void
-      publicKey?: { toString: () => string } | null
-      isConnected?: boolean
-    }
-    backpack?: {
-      isBackpack?: boolean
-      connect: () => Promise<{ publicKey: { toString: () => string } }>
-      disconnect: () => Promise<void>
-      on: (event: string, callback: () => void) => void
-      off: (event: string, callback: () => void) => void
-      publicKey?: { toString: () => string } | null
-      isConnected?: boolean
-    }
-  }
-}
-
 let globalWallet: WalletConnection | null = null
 
 export function useWallet() {
