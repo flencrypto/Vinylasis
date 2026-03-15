@@ -116,11 +116,11 @@ export function MoodAnalysisDialog({ open, onOpenChange }: MoodAnalysisDialogPro
       }
 
       // Track genre keywords for the genre bar chart
+      const text = [item.releaseTitle, item.artistName, item.notes, item.labelName]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
       for (const entry of MOOD_MAP) {
-        const text = [item.releaseTitle, item.artistName, item.notes, item.labelName]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
         for (const keyword of entry.keywords) {
           const pattern = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
           if (pattern.test(text)) {

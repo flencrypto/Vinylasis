@@ -20,6 +20,7 @@ interface QuantumAnalyticsDialogProps {
 const CONDITION_COLORS: Record<string, string> = {
   M: '#10b981',
   NM: '#06b6d4',
+  EX: '#3b82f6',
   'VG+': '#7c3aed',
   VG: '#f59e0b',
   G: '#ef4444',
@@ -96,7 +97,7 @@ export function QuantumAnalyticsDialog({ open, onOpenChange }: QuantumAnalyticsD
       .slice(0, 5)
       .map(([name, count]) => ({ name, count, pct: (count / collection.length) * 100 }))
 
-    const conditionOrder = ['M', 'NM', 'VG+', 'VG', 'G', 'F', 'P']
+    const conditionOrder = ['M', 'NM', 'EX', 'VG+', 'VG', 'G', 'F', 'P']
     const conditions = conditionOrder
       .map(grade => ({ grade, count: conditionCounts[grade] || 0 }))
       .filter(c => c.count > 0)
@@ -214,8 +215,8 @@ export function QuantumAnalyticsDialog({ open, onOpenChange }: QuantumAnalyticsD
               <div>
                 <h3 className="text-sm font-semibold mb-3">Top Records by Estimated Value</h3>
                 <div className="space-y-2">
-                  {analytics.topRecords.map((record, idx) => (
-                    <Card key={idx} className="p-3 flex items-center justify-between">
+                  {analytics.topRecords.map((record) => (
+                    <Card key={`${record.artist}-${record.title}`} className="p-3 flex items-center justify-between">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{record.artist}</p>
                         <p className="text-xs text-muted-foreground truncate">{record.title}</p>

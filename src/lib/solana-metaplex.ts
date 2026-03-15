@@ -18,6 +18,7 @@ import {
   createSignerFromKeypair,
   signerIdentity,
   KeypairSigner,
+  base58,
 } from '@metaplex-foundation/umi'
 
 export interface MetaplexMintResult {
@@ -75,8 +76,8 @@ export async function mintNFTWithMetaplex(
 
     return {
       success: true,
-      mintAddress: String(assetSigner.publicKey),
-      transactionSignature: String(tx.signature),
+      mintAddress: assetSigner.publicKey as string,
+      transactionSignature: base58.deserialize(tx.signature)[0],
       metadataUri,
     }
   } catch (error) {

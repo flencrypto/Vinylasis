@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useSyncExternalStore } from 'react'
 
 export interface WalletConnection {
   publicKey: string
@@ -7,27 +7,40 @@ export interface WalletConnection {
 }
 
 let globalWallet: WalletConnection | null = null
+const listeners = new Set<() => void>()
+
+function emitChange() {
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => { listeners.delete(listener) }
+}
+
+function getSnapshot(): WalletConnection | null {
+  return globalWallet
+}
 
 export function useWallet() {
-  const [wallet, setWallet] = useState<WalletConnection | null>(globalWallet)
+  const wallet = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
   const connect = useCallback((connection: WalletConnection) => {
     globalWallet = connection
-    setWallet(connection)
     localStorage.setItem('vinylvault_wallet', JSON.stringify(connection))
+    emitChange()
   }, [])
 
   const disconnect = useCallback(() => {
     globalWallet = null
-    setWallet(null)
     localStorage.removeItem('vinylvault_wallet')
+    emitChange()
   }, [])
 
   useEffect(() => {
-    if (globalWallet) {
-      setWallet(globalWallet)
-      return
-    }
+    if (globalWallet) return
 
     const savedConnection = localStorage.getItem('vinylvault_wallet')
     if (savedConnection) {
@@ -48,13 +61,12 @@ export function useWallet() {
         }
 
         if (walletProvider?.publicKey && walletProvider?.isConnected) {
-          const reconnected = {
+          globalWallet = {
             ...parsed,
             publicKey: walletProvider.publicKey.toString(),
             connected: true,
           }
-          globalWallet = reconnected
-          setWallet(reconnected)
+          emitChange()
         } else {
           localStorage.removeItem('vinylvault_wallet')
         }
