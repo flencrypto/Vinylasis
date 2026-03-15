@@ -147,6 +147,24 @@ export function MintNFTDialog({ open, onOpenChange, item, onMintComplete }: Mint
                     <span className="font-mono">{item.catalogNumber}</span>
                   </div>
                 )}
+                {item.rarity && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rarity:</span>
+                    <Badge variant="secondary">{item.rarity}</Badge>
+                  </div>
+                )}
+                {item.ukChartPosition && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">UK Chart Peak:</span>
+                    <span>#{item.ukChartPosition}</span>
+                  </div>
+                )}
+                {item.anecdotes && item.anecdotes.filter(a => a.trim()).length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Anecdotes:</span>
+                    <span>{item.anecdotes.filter(a => a.trim()).length} recorded</span>
+                  </div>
+                )}
               </div>
             </div>
 

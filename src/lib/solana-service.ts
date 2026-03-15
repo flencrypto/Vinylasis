@@ -72,6 +72,14 @@ export async function prepareNFTMetadataFromItem(
     attributes.push({ trait_type: 'Vinyl Color', value: item.vinylColor })
   }
 
+  if (item.rarity) {
+    attributes.push({ trait_type: 'Rarity', value: item.rarity })
+  }
+
+  if (item.ukChartPosition) {
+    attributes.push({ trait_type: 'UK Chart Position (Peak)', value: item.ukChartPosition })
+  }
+
   if (item.storageLocation) {
     attributes.push({ trait_type: 'Storage Location', value: item.storageLocation })
   }
@@ -180,6 +188,13 @@ export async function prepareNFTMetadataFromItem(
   
   if (item.notes) {
     description += `\nCollector Notes:\n${item.notes}\n`
+  }
+
+  if (item.anecdotes && item.anecdotes.length > 0) {
+    description += `\nAnecdotes:\n`
+    item.anecdotes.forEach((anecdote, i) => {
+      description += `${i + 1}. ${anecdote}\n`
+    })
   }
   
   if (item.discogsId) {
