@@ -61,6 +61,12 @@ export interface CollectionItem {
   year: number
   country: string
   catalogNumber?: string
+  labelName?: string
+  matrixNumbers?: string[]
+  barcodes?: string[]
+  vinylColor?: string
+  discogsId?: number
+  discogsReleaseId?: number
   acquisitionDate?: string
   purchasePrice?: number
   purchaseCurrency: string
@@ -73,6 +79,7 @@ export interface CollectionItem {
   condition: ItemCondition
   images?: string[]
   priceHistory?: PriceHistoryEntry[]
+  estimatedValue?: PriceEstimate
   createdAt: string
   updatedAt: string
 }
@@ -148,6 +155,11 @@ export interface PressingCandidate {
   format: Format
   catalogNumber?: string
   matrixNumbers?: string[]
+  discogsUrl?: string
+  discogsId?: number
+  discogsReleaseId?: number
+  discogsVariant?: string
+  imageUrls?: string[]
   confidence: number
   matchedIdentifiers: string[]
   reasoning: string

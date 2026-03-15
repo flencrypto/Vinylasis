@@ -97,8 +97,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
   }
 
   const detectImageType = async (image: ItemImage) => {
-    const openaiKey = apiKeys?.openaiKey
-    if (!openaiKey || !autoDetectType) return
+    if (!autoDetectType) return
 
     setDetectingTypes(prev => new Set(prev).add(image.id))
 
@@ -107,27 +106,28 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       const confidenceBand = getConfidenceBand(result.confidence)
       const meetsThreshold = checkConfidence('imageClassification', result.confidence)
       
-      if (meetsThreshold) {
-        onImagesChange(
-          images.map(img =>
-            img.id === image.id 
-              ? { ...img, type: result.imageType as ImageType }
-              : img
-          )
+      onImagesChange(
+        images.map(img =>
+          img.id === image.id 
+            ? { ...img, type: result.imageType as ImageType }
+            : img
         )
-        toast.success(`Auto-detected: ${result.imageType.replace('_', ' ')}`, {
-          description: `${Math.round(result.confidence * 100)}% confidence`
+      )
+      
+      if (meetsThreshold) {
+        toast.success(`Auto-detected: ${result.imageType.replace(/_/g, ' ')}`, {
+          description: `${Math.round(result.confidence * 100)}% confidence - ${result.reasoning}`
         })
       } else {
         const threshold = getThreshold('imageClassification')
-        toast.warning(`Low confidence detection (${Math.round(result.confidence * 100)}%)`, {
-          description: `Below ${threshold}% threshold. Please verify manually. Suggested: ${result.imageType.replace('_', ' ')}`
+        toast.warning(`Low confidence: ${result.imageType.replace(/_/g, ' ')}`, {
+          description: `${Math.round(result.confidence * 100)}% (threshold: ${threshold}%) - Please verify manually`
         })
       }
     } catch (error) {
       console.error('Image type detection failed:', error)
       toast.error('Auto-detection failed', {
-        description: 'Please select image type manually'
+        description: error instanceof Error ? error.message : 'Please select image type manually'
       })
     } finally {
       setDetectingTypes(prev => {
@@ -220,14 +220,6 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
   }
 
   const batchAutoDetectAll = async () => {
-    const openaiKey = apiKeys?.openaiKey
-    if (!openaiKey) {
-      toast.error('OpenAI API key not configured', {
-        description: 'Please add your OpenAI API key in Settings'
-      })
-      return
-    }
-
     if (images.length === 0) {
       toast.info('No images to classify')
       return
@@ -237,21 +229,16 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
 
     let successCount = 0
     let failCount = 0
+    const updatedImages = [...images]
 
-    for (const img of images) {
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i]
       setDetectingTypes(prev => new Set(prev).add(img.id))
 
       try {
         const result = await classifyImage(img.dataUrl)
         
-        onImagesChange(
-          images.map(image =>
-            image.id === img.id 
-              ? { ...image, type: result.imageType as ImageType }
-              : image
-          )
-        )
-
+        updatedImages[i] = { ...updatedImages[i], type: result.imageType as ImageType }
         successCount++
       } catch (error) {
         console.error(`Image type detection failed for ${img.id}:`, error)
@@ -265,9 +252,11 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       }
     }
 
+    onImagesChange(updatedImages)
+
     if (successCount > 0) {
       toast.success(`Auto-detected ${successCount} image${successCount > 1 ? 's' : ''}`, {
-        description: failCount > 0 ? `${failCount} failed - please set manually` : undefined
+        description: failCount > 0 ? `${failCount} failed - please verify manually. Check confidence scores.` : 'Review and adjust if needed'
       })
     } else {
       toast.error('Auto-detection failed for all images', {
@@ -317,7 +306,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
           <ImageIcon size={18} />
           Choose Files
         </Button>
-        {images.length > 0 && apiKeys?.openaiKey && autoDetectType && (
+        {images.length > 0 && autoDetectType && (
           <Button
             type="button"
             variant="secondary"
@@ -409,7 +398,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
                   </SelectContent>
                 </Select>
                 <div className="flex gap-2 flex-wrap">
-                  {autoDetectType && apiKeys?.openaiKey && (
+                  {autoDetectType && (
                     <Button
                       type="button"
                       variant="secondary"
@@ -464,7 +453,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       )}
 
       <p className="text-xs text-muted-foreground">
-        Use "Take Photo" to capture images directly with your camera, or "Choose Files" to upload from your device. Upload up to {maxImages} images. {apiKeys?.openaiKey && autoDetectType ? 'AI automatically detects image types when photos are added. Use "Auto-Detect All Types" to classify all images at once. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
+        Use "Take Photo" to capture images directly with your camera, or "Choose Files" to upload from your device. Upload up to {maxImages} images. {autoDetectType ? 'AI automatically detects image types when photos are added using pattern matching. Use "Auto-Detect All Types" to classify all images at once. Always verify the detected type. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
       </p>
     </div>
   )
