@@ -27,6 +27,36 @@ const CONDITION_COLORS: Record<string, string> = {
   P: '#374151',
 }
 
+const GENRE_KEYWORDS: { genre: string; keywords: string[] }[] = [
+  { genre: 'Rock', keywords: ['rock', 'punk', 'grunge', 'indie'] },
+  { genre: 'Metal', keywords: ['metal', 'heavy', 'thrash', 'doom'] },
+  { genre: 'Jazz', keywords: ['jazz', 'bebop', 'swing', 'bossa'] },
+  { genre: 'Classical', keywords: ['classical', 'orchestral', 'symphony'] },
+  { genre: 'Blues', keywords: ['blues'] },
+  { genre: 'Electronic', keywords: ['electronic', 'techno', 'house', 'ambient', 'synth'] },
+  { genre: 'Pop', keywords: ['pop', 'disco'] },
+  { genre: 'Soul / R&B', keywords: ['soul', 'gospel', 'r&b', 'funk'] },
+  { genre: 'Hip Hop', keywords: ['hip hop', 'rap', 'trap'] },
+  { genre: 'Folk / Country', keywords: ['folk', 'acoustic', 'country', 'bluegrass'] },
+  { genre: 'Reggae', keywords: ['reggae', 'ska', 'dub'] },
+  { genre: 'Latin', keywords: ['latin', 'salsa', 'samba'] },
+  { genre: 'World', keywords: ['world', 'afrobeat'] },
+]
+
+function detectGenre(item: CollectionItem): string {
+  const text = [item.releaseTitle, item.artistName, item.notes, item.labelName]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+  for (const entry of GENRE_KEYWORDS) {
+    for (const kw of entry.keywords) {
+      const pattern = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+      if (pattern.test(text)) return entry.genre
+    }
+  }
+  return 'Other'
+}
+
 export function QuantumAnalyticsDialog({ open, onOpenChange }: QuantumAnalyticsDialogProps) {
   const [items] = useKV<CollectionItem[]>('vinyl-vault-collection', [])
 
@@ -48,7 +78,7 @@ export function QuantumAnalyticsDialog({ open, onOpenChange }: QuantumAnalyticsD
       totalInvested += invested
       totalValue += value
 
-      const genre = 'Unknown'
+      const genre = detectGenre(item)
       genreCounts[genre] = (genreCounts[genre] || 0) + 1
 
       const condition = item.condition?.mediaGrade || 'Unknown'
