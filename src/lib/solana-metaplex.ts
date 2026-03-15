@@ -127,46 +127,6 @@ export async function uploadMetadataToArweave(metadata: SolanaNFTMetadata): Prom
   return `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`
 }
 
-function getBrowserWalletProvider(walletType: string) {
-  switch (walletType) {
-    case 'phantom':
-      return window.solana
-    case 'solflare':
-      return window.solflare
-    case 'backpack':
-      return window.backpack
-    default:
-      throw new Error(`Unsupported wallet type: ${walletType}`)
-  }
-}
-
-interface BrowserWalletProvider {
-  publicKey: { toString: () => string } | null | undefined
-  signMessage: (message: Uint8Array, encoding?: string) => Promise<{ signature: Uint8Array } | Uint8Array>
-  signTransaction: (transaction: Web3JsVersionedTransaction) => Promise<Web3JsVersionedTransaction>
-  signAllTransactions: (transactions: Web3JsVersionedTransaction[]) => Promise<Web3JsVersionedTransaction[]>
-}
-
-function createBrowserWalletSigner(walletAddress: string, provider: BrowserWalletProvider): Signer {
-  return {
-    publicKey: umiPublicKey(walletAddress),
-    signMessage: async (message: Uint8Array): Promise<Uint8Array> => {
-      const result = await provider.signMessage(message, 'utf8')
-      return (result as { signature: Uint8Array }).signature ?? (result as Uint8Array)
-    },
-    signTransaction: async (transaction: UmiTransaction): Promise<UmiTransaction> => {
-      const web3Tx = toWeb3JsTransaction(transaction)
-      const signed = await provider.signTransaction(web3Tx)
-      return fromWeb3JsTransaction(signed)
-    },
-    signAllTransactions: async (transactions: UmiTransaction[]): Promise<UmiTransaction[]> => {
-      const web3Txs = transactions.map(toWeb3JsTransaction)
-      const signed = await provider.signAllTransactions(web3Txs)
-      return signed.map(fromWeb3JsTransaction)
-    },
-  }
-}
-
 export async function mintNFTWithMetaplex(
   config: NFTMintConfig,
   walletAddress: string,
