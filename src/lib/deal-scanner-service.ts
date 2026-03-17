@@ -143,7 +143,7 @@ class DealScannerService {
         }
       }
     } catch {
-      // ignore
+      // KV read failure is non-fatal; fall through to unauthenticated requests
     }
     return ''
   }
