@@ -67,9 +67,11 @@ export default function DealScannerView() {
   const [alertCount, setAlertCount] = useState(0)
   const [profitCalcOpen, setProfitCalcOpen] = useState(false)
   const [isMarketplaceSettingsOpen, setIsMarketplaceSettingsOpen] = useState(false)
-  const [webScraperEnabled, setWebScraperEnabled] = useState(webScrapingService.isEnabled())
 
   const config = scanConfig || DEFAULT_SCAN_CONFIG
+  // Derive web scraper state from the persisted scan config so the toggle
+  // stays consistent with what the scanner actually uses.
+  const webScraperEnabled = config.useWebScraping ?? false
 
   const handleScanNow = useCallback(async () => {
     setIsScanning(true)
@@ -165,7 +167,6 @@ export default function DealScannerView() {
 
   const handleToggleWebScraper = useCallback((enabled: boolean) => {
     webScrapingService.updateConfig({ enabled })
-    setWebScraperEnabled(enabled)
     const updated = { ...config, useWebScraping: enabled }
     setScanConfig(updated)
     localStorage.setItem('auto_buy_config', JSON.stringify(updated))

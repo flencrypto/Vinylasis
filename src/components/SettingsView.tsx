@@ -227,7 +227,11 @@ export default function SettingsView() {
   }
 
   const handleSave = () => {
-    if (apiKeys) setApiKeys(apiKeys)
+    if (!apiKeys) {
+      toast.error('Settings not loaded yet, please try again')
+      return
+    }
+    setApiKeys(apiKeys)
     toast.success('Settings saved successfully', {
       description: 'Your API keys and preferences have been updated',
     })
