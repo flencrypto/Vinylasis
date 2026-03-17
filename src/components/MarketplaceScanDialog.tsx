@@ -34,10 +34,11 @@ export function MarketplaceScanDialog({ open, onOpenChange }: MarketplaceScanDia
   const [scanStatus, setScanStatus] = useState('')
   const [foundCount, setFoundCount] = useState(0)
   
-  const [ebayAppId = ''] = useKV<string>('ebay-app-id', '')
-  const [discogsToken = ''] = useKV<string>('discogs-user-token', '')
   const [bargains = [], setBargains] = useKV<BargainCardType[]>('bargains', [])
   const [marketplaceConfig = getDefaultMarketplaceConfig()] = useKV<MarketplaceConfig>('marketplace-config', getDefaultMarketplaceConfig())
+
+  const ebayAppId = marketplaceConfig?.ebay?.appId || ''
+  const discogsToken = marketplaceConfig?.discogs?.userToken || ''
   const [agentConfig] = useKV<AgentConfig>('agent-config')
 
   const canScan = searchQuery.trim().length > 0 && (

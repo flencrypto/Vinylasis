@@ -5,11 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Binoculars, Play, Stop, Lightning, ArrowsClockwise, TrendUp, CurrencyGbp, Storefront, Calculator } from '@phosphor-icons/react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Binoculars, Play, Stop, Lightning, ArrowsClockwise, TrendUp, CurrencyGbp, Storefront, Calculator, GearSix, GlobeSimple } from '@phosphor-icons/react'
 import { ArbitrageCalculatorDialog } from '@/components/ArbitrageCalculatorDialog'
+import { MarketplaceSettingsDialog } from '@/components/MarketplaceSettingsDialog'
 import { dealScannerService, type Deal, type ScanConfig } from '@/lib/deal-scanner-service'
 import { dealFinderService } from '@/lib/deal-finder-service'
 import { telegramService } from '@/lib/telegram-service'
+import { webScrapingService } from '@/lib/web-scraping-service'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -62,6 +66,8 @@ export default function DealScannerView() {
   const [minRoiFilter, setMinRoiFilter] = useState(0)
   const [alertCount, setAlertCount] = useState(0)
   const [profitCalcOpen, setProfitCalcOpen] = useState(false)
+  const [isMarketplaceSettingsOpen, setIsMarketplaceSettingsOpen] = useState(false)
+  const [webScraperEnabled, setWebScraperEnabled] = useState(webScrapingService.isEnabled())
 
   const config = scanConfig || DEFAULT_SCAN_CONFIG
 
@@ -156,6 +162,15 @@ export default function DealScannerView() {
       toast.error('Telegram test failed', { description: String(err) })
     }
   }, [])
+
+  const handleToggleWebScraper = useCallback((enabled: boolean) => {
+    webScrapingService.updateConfig({ enabled })
+    setWebScraperEnabled(enabled)
+    const updated = { ...config, useWebScraping: enabled }
+    setScanConfig(updated)
+    localStorage.setItem('auto_buy_config', JSON.stringify(updated))
+    toast(enabled ? 'Web scraper enabled' : 'Web scraper disabled')
+  }, [config, setScanConfig])
 
   // Sync auto-scan state on mount
   useEffect(() => {
@@ -309,6 +324,15 @@ export default function DealScannerView() {
               <Calculator size={14} />
               Profit Calculator
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsMarketplaceSettingsOpen(true)}
+              className="gap-1.5 text-xs border-slate-700"
+            >
+              <GearSix size={14} />
+              Marketplace
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -340,6 +364,25 @@ export default function DealScannerView() {
                 className="mt-2"
               />
             </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <GlobeSimple size={14} className="text-slate-400" />
+              <Label htmlFor="web-scraper-toggle" className="text-xs text-slate-400 cursor-pointer">
+                Web Scraper
+              </Label>
+              {webScraperEnabled && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 h-4 bg-green-500/20 text-green-400">
+                  Active
+                </Badge>
+              )}
+            </div>
+            <Switch
+              id="web-scraper-toggle"
+              checked={webScraperEnabled}
+              onCheckedChange={handleToggleWebScraper}
+            />
           </div>
         </CardContent>
       </Card>
@@ -488,6 +531,7 @@ export default function DealScannerView() {
       </AnimatePresence>
 
       <ArbitrageCalculatorDialog open={profitCalcOpen} onOpenChange={setProfitCalcOpen} />
+      <MarketplaceSettingsDialog open={isMarketplaceSettingsOpen} onOpenChange={setIsMarketplaceSettingsOpen} />
     </div>
   )
 }
