@@ -133,6 +133,21 @@ class DealScannerService {
     }
   }
 
+  private async _getDiscogsToken(): Promise<string> {
+    try {
+      const sparkKv = (globalThis as any)?.spark?.kv
+      if (sparkKv && typeof sparkKv.get === 'function') {
+        const mpConfig = await sparkKv.get('marketplace-config') as { discogs?: { userToken?: string } } | undefined
+        if (mpConfig?.discogs?.userToken) {
+          return mpConfig.discogs.userToken
+        }
+      }
+    } catch {
+      // KV read failure is non-fatal; fall through to unauthenticated requests
+    }
+    return ''
+  }
+
   private _getConditionRank(condition: string): number {
     const idx = CONDITION_ORDER.indexOf((condition || '').toUpperCase())
     return idx === -1 ? 0 : idx
@@ -211,7 +226,7 @@ class DealScannerService {
   // Scan logic
   // ---------------------------------------------------------------------------
 
-  async scanRecord(record: ScanRecord, config: ScanConfig): Promise<Deal[]> {
+  async scanRecord(record: ScanRecord, config: ScanConfig, discogsToken = ''): Promise<Deal[]> {
     const artist = record.artist || record.Artist || ''
     const title =
       record.title || record.Title || record.album || record.Album || ''
@@ -307,9 +322,13 @@ class DealScannerService {
     const releaseId = record.discogsReleaseId || record.release_id
     if (releaseId) {
       try {
+        const discogsHeaders: Record<string, string> = { 'User-Agent': 'VinylVault/1.0' }
+        if (discogsToken) {
+          discogsHeaders['Authorization'] = `Discogs token=${discogsToken}`
+        }
         const response = await fetch(
           `https://api.discogs.com/marketplace/listings?release_id=${releaseId}&limit=5`,
-          { headers: { 'User-Agent': 'VinylVault/1.0' } },
+          { headers: discogsHeaders },
         )
         if (response.ok) {
           const data = await response.json()
@@ -451,8 +470,10 @@ class DealScannerService {
       const collection = await this._getCollection()
       if (!collection.length) return { notified: 0, deals: [] }
 
+      const discogsToken = await this._getDiscogsToken()
+
       for (const record of collection) {
-        const deals = await this.scanRecord(record, config)
+        const deals = await this.scanRecord(record, config, discogsToken)
         allDeals.push(...deals)
 
         for (const deal of deals) {
