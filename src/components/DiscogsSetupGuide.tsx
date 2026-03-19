@@ -1,19 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
--icons/react'
+import { ArrowRight, Check } from '@phosphor-icons/react'
+
 interface DiscogsSetupGuideProps {
   isConfigured?: boolean
   onGetStarted: () => void
 }
 
 export default function DiscogsSetupGuide({ isConfigured, onGetStarted }: DiscogsSetupGuideProps) {
-          </CardDescr
-        <Car
-            <Button
-              classN
-              <Check className="w-4 h-4" />
-            </Button>
-        </CardContent>
+  return (
+    <Card className="border-border/50">
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <CardTitle className="text-lg">Discogs Integration</CardTitle>
             <CardDescription className="text-slate-300">
               Connect to Discogs for enhanced record data and market insights
             </CardDescription>
