@@ -22,7 +22,7 @@ import {
   Files,
   ArrowRight,
 } from '@phosphor-icons/react'
-import { ItemImage, CollectionItem, Format, MediaGrade, SleeveGrade, ImageType } from '@/lib/types'
+import { ItemImage, CollectionItem, Format, MediaGrade, SleeveGrade } from '@/lib/types'
 import { analyzeVinylImage } from '@/lib/image-analysis-ai'
 import { identifyPressing } from '@/lib/pressing-identification-ai'
 import { analyzeConditionFromImages, suggestGradingNotes } from '@/lib/condition-grading-ai'
@@ -30,42 +30,42 @@ import { toast } from 'sonner'
 import { useKV } from '@github/spark/hooks'
 
 interface BatchRecordUploadDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+  onOpenChange:
 
-interface RecordBatch {
-  id: string
-  images: ItemImage[]
-  status: 'pending' | 'processing' | 'completed' | 'error'
-  progress: number
-  result?: CollectionItem
-  error?: string
-}
+ 
 
-export default function BatchRecordUploadDialog({
-  open,
+  result?: CollectionIt
+}
+export default functi
   onOpenChange,
-}: BatchRecordUploadDialogProps) {
-  const [items, setItems] = useKV<CollectionItem[]>('vinyl-vault-collection', [])
-  const [batches, setBatches] = useState<RecordBatch[]>([])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [currentBatchIndex, setCurrentBatchIndex] = useState<number | null>(null)
+  const [items, se
+  const [isProcessing, se
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
+ 
 
-    const imagePromises = files.map((file) => {
-      return new Promise<ItemImage>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          resolve({
-            id: `${Date.now()}-${Math.random()}`,
-            dataUrl: reader.result as string,
-            type: 'front_cover' as ImageType,
-            mimeType: file.type || 'image/jpeg',
+      return new Promise<ItemImage>((resolve) => 
+       
+            id:
+            type: 'front_cover' as
             uploadedAt: new Date().toISOString(),
+        }
+      })
+
+
+
+        currentGroup.push(img)
+          if (currentGroup.length 
+
+        }
+
+        id: `batch-${Date.now()}-${idx}
+        status: 'pending',
+      }))
+      setBatches((prev) => [...prev, ...newBatche
+            dataUrl: reader.result as string,
+            type: 'unknown',
+            fileName: file.name,
+            addedAt: new Date().toISOString(),
           })
         }
         reader.readAsDataURL(file)
@@ -127,135 +127,135 @@ export default function BatchRecordUploadDialog({
 
       const bestCandidate = pressingCandidates[0]
 
-      if (!bestCandidate) {
-        throw new Error('No pressing candidates found')
-      }
-
-      setBatches((prev) =>
-        prev.map((b) => (b.id === batch.id ? { ...b, progress: 60 } : b))
-      )
-
-      const conditionAnalysis = await analyzeConditionFromImages(batch.images)
-      const gradingNotes = await suggestGradingNotes(conditionAnalysis.defects)
-
-      setBatches((prev) =>
-        prev.map((b) => (b.id === batch.id ? { ...b, progress: 80 } : b))
-      )
-
-      const newItem: CollectionItem = {
-        id: `item-${Date.now()}-${Math.random()}`,
-        collectionId: 'main',
-        artistName: bestCandidate.artistName || 'Unknown Artist',
-        releaseTitle: bestCandidate.releaseTitle || 'Unknown Release',
-        format: (bestCandidate.format || 'LP') as Format,
-        year: bestCandidate.year || new Date().getFullYear(),
-        country: bestCandidate.country || 'Unknown',
-        catalogNumber: bestCandidate.catalogNumber,
-        purchaseCurrency: 'USD',
-        sourceType: 'unknown',
-        quantity: 1,
-        status: 'owned',
-        condition: {
-          mediaGrade: (conditionAnalysis.mediaGrade || 'VG+') as MediaGrade,
-          sleeveGrade: (conditionAnalysis.sleeveGrade || 'VG') as SleeveGrade,
-          gradingStandard: 'Goldmine',
-          gradingNotes: gradingNotes,
-          gradedAt: new Date().toISOString(),
         },
-        images: batch.images.map(img => img.dataUrl),
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       }
 
-      setBatches((prev) =>
-        prev.map((b) =>
-          b.id === batch.id
-            ? { ...b, status: 'completed', progress: 100, result: newItem }
+          b.id === batch.i
             : b
-        )
       )
 
-      return newItem
-    } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Processing failed'
       setBatches((prev) =>
-        prev.map((b) =>
-          b.id === batch.id
-            ? { ...b, status: 'error', progress: 0, error: errorMessage }
+
             : b
-        )
       )
-      throw error
     }
-  }
 
-  const processAllBatches = async () => {
-    const pendingBatches = batches.filter((b) => b.status === 'pending')
-    if (pendingBatches.length === 0) {
+    const pendingBatches = batches.filt
       toast.error('No batches to process')
-      return
     }
-
     setIsProcessing(true)
-    const successfulItems: CollectionItem[] = []
 
-    for (let i = 0; i < pendingBatches.length; i++) {
       setCurrentBatchIndex(i)
-      try {
         const item = await processBatch(pendingBatches[i])
-        successfulItems.push(item)
       } catch (error) {
-        console.error(`Failed to process batch ${i + 1}:`, error)
       }
-    }
 
-    if (successfulItems.length > 0) {
-      setItems((currentItems) => [...successfulItems, ...(currentItems || [])])
-      toast.success(`Successfully added ${successfulItems.length} record(s)`)
+      setItems((currentItems) 
     }
-
-    setIsProcessing(false)
-    setCurrentBatchIndex(null)
+    setIsProcessing(fals
   }
-
   const clearCompleted = () => {
-    setBatches((prev) =>
       prev.filter((b) => b.status !== 'completed' && b.status !== 'error')
-    )
   }
+  const completedCount = batches.filt
+  const pendingCount = batches.filter((b) => 
 
-  const completedCount = batches.filter((b) => b.status === 'completed').length
-  const errorCount = batches.filter((b) => b.status === 'error').length
-  const pendingCount = batches.filter((b) => b.status === 'pending').length
-  const processingCount = batches.filter((b) => b.status === 'processing').length
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+    <Dialog open={open} onOpe
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
             <Files className="w-5 h-5" />
-            Batch Upload Records
-          </DialogTitle>
-          <DialogDescription>
-            Upload multiple vinyl record images and process them in batches. Group
-            4 images per record for best results.
-          </DialogDescription>
-        </DialogHeader>
+       
 
-        <div className="flex-1 flex flex-col gap-4 min-h-0">
-          <div className="flex items-center justify-between gap-3">
-            <Button
+          </DialogDescript
+
+          <div className="f
               variant="outline"
-              className="relative"
-              onClick={() => document.getElementById('batch-file-input')?.click()}
-              disabled={isProcessing}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Add Images
-              <input
-                id="batch-file-input"
+              o
+         
+       
+
+                mult
+                class
+              />
+
+              {batches.len
+                  <Badg
+                  </Badge>
+                    <Badge variant="default">{completedCount} completed</
+               
+         
+       
+          </div>
+     
+   
+
+                  <ImageIcon className="w
+                <div className="space-y-2">
+                  <p className="text-s
+                    contain 3-5 images of 
+            
+     
+
+                {batches.
+                    <div className="flex items-s
+
+                            <div
+                             
+           
+                                alt=""
+                              />
+                       
+                      </div>
+       
+     
+
+                            <p classN
+                            </p>
+
+     
+
+                          
+                              
+   
+
+                                
+                        
+                              <Badge variant="destructive" className="gap-
+     
+   
+
+                                size="sm"
+                                onClick={() => removeBatch(batch.id)}
+                                <X className="w-4 h-4" />
+                            )}
+
+          
+                            <Progress value={batch.p
+                              {batch.progress}% complete
+                      
+
+                          <div className=
+                              {b
+                        
+                             
+                            </p>
+                        )}
+                        {batch
+                       
+
+                ))}
+            </ScrollArea>
+
+
+            <div className="text-s
+                <span>{pendingCount} batch(es) ready to process</span>
+            </div>
+            <
+                <Button variant="outline" size="s
+                </Button
+
+                onClick={processAllBa
                 type="file"
                 multiple
                 accept="image/*"
@@ -418,6 +418,28 @@ export default function BatchRecordUploadDialog({
 
               <Button
                 onClick={processAllBatches}
+                disabled={isProcessing || pendingCount === 0}
+                className="gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <CircleNotch className="w-4 h-4 animate-spin" />
+                    Processing {currentBatchIndex !== null ? `${currentBatchIndex + 1}/${pendingCount}` : '...'}
+                  </>
+                ) : (
+                  <>
+                    Process All
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
                 disabled={isProcessing || pendingCount === 0}
                 className="gap-2"
               >
