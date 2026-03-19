@@ -1,20 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, Database, ArrowRight } from '@phosphor-icons/react'
-
+-icons/react'
 interface DiscogsSetupGuideProps {
   isConfigured?: boolean
   onGetStarted: () => void
 }
 
 export default function DiscogsSetupGuide({ isConfigured, onGetStarted }: DiscogsSetupGuideProps) {
-  return (
-    <Card className="bg-gradient-to-br from-accent/10 via-transparent to-transparent border-accent/20">
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <Database className="w-6 h-6 text-accent mt-1" weight="duotone" />
-          <div>
-            <CardTitle className="text-xl text-slate-100">Discogs Integration</CardTitle>
+          </CardDescr
+        <Car
+            <Button
+              classN
+              <Check className="w-4 h-4" />
+            </Button>
+        </CardContent>
             <CardDescription className="text-slate-300">
               Connect to Discogs for enhanced record data and market insights
             </CardDescription>
