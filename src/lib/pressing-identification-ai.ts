@@ -45,16 +45,80 @@ function calculateConfidenceBand(score: number): 'high' | 'medium' | 'low' | 'am
   return 'ambiguous'
 }
 
+function extractMatrixPatterns(text: string): string[] {
+  const patterns = [
+    /\b[A-Z]\d{1,2}\b/gi,
+    /\b[A-Z]{2,4}[-\s]?\d{3,5}[-\s]?[A-Z]\b/gi,
+    /\b\d{5,6}[-\s]?[A-Z]{1,2}[-\s]?\d\b/gi,
+    /\b[A-Z]{3,5}\d{3,5}\b/gi,
+  ]
+  
+  const matches = new Set<string>()
+  
+  for (const pattern of patterns) {
+    const found = text.match(pattern)
+    if (found) {
+      found.forEach(m => matches.add(m.trim().toUpperCase()))
+    }
+  }
+  
+  return Array.from(matches)
+}
+
+function similarityScore(a: string, b: string): number {
+  const normA = normalizeIdentifier(a)
+  const normB = normalizeIdentifier(b)
+  
+  if (normA === normB) return 1.0
+  
+  if (normA.includes(normB) || normB.includes(normA)) {
+    const shorter = Math.min(normA.length, normB.length)
+    const longer = Math.max(normA.length, normB.length)
+    return shorter / longer
+  }
+  
+  let matches = 0
+  const minLen = Math.min(normA.length, normB.length)
+  
+  for (let i = 0; i < minLen; i++) {
+    if (normA[i] === normB[i]) matches++
+  }
+  
+  return matches / Math.max(normA.length, normB.length)
+}
+
+function deduplicateCandidates(candidates: ScoredPressingCandidate[]): ScoredPressingCandidate[] {
+  const seen = new Map<string, ScoredPressingCandidate>()
+  
+  for (const candidate of candidates) {
+    const key = `${candidate.discogsId || ''}|${normalizeIdentifier(candidate.catalogNumber || '')}|${normalizeIdentifier(candidate.artistName)}|${normalizeIdentifier(candidate.releaseTitle)}`
+    
+    const existing = seen.get(key)
+    
+    if (!existing || candidate.confidence > existing.confidence) {
+      seen.set(key, candidate)
+    }
+  }
+  
+  return Array.from(seen.values()).sort((a, b) => b.confidence - a.confidence)
+}
+
 export async function identifyPressing(
   input: PressingIdentificationInput
 ): Promise<ScoredPressingCandidate[]> {
   
   const allExtractedText = input.imageAnalysis?.flatMap(r => r.extractedText) || []
   const allLabels = input.imageAnalysis?.flatMap(r => r.identifiedLabels) || []
-  const allMatrixNumbers = [
+  
+  const rawMatrixNumbers = [
     ...(input.imageAnalysis?.flatMap(r => r.matrixNumbers) || []),
     ...(input.ocrRunoutValues || [])
   ]
+  
+  const patternExtractedMatrix = allExtractedText.flatMap(text => extractMatrixPatterns(text))
+  
+  const allMatrixNumbers = Array.from(new Set([...rawMatrixNumbers, ...patternExtractedMatrix]))
+  
   const allCatalogNumbers = input.imageAnalysis?.flatMap(r => r.catalogNumbers) || []
   const allBarcodes = input.imageAnalysis?.flatMap(r => r.barcodes) || []
   
@@ -118,32 +182,46 @@ ${discogsReleases.length > 0 ? discogsReleases.map((release, idx) => {
 
 **SCORING SIGNALS:**
 When scoring candidates, consider these factors (in priority order):
-1. Catalog number exact match (highest weight)
-2. Barcode match (very high weight)
-3. Matrix/runout similarity (high weight)
-4. Country match
-5. Format match
-6. Label text similarity
-7. Year plausibility (within ±2 years)
+1. Catalog number exact match (weight: 0.35) - HIGHEST PRIORITY
+2. Barcode exact match (weight: 0.30) - VERY HIGH PRIORITY
+3. Matrix/runout fuzzy similarity (weight: 0.20) - use fuzzy matching, not just exact
+4. Country match (weight: 0.05)
+5. Format match (weight: 0.05)
+6. Label text similarity (weight: 0.03) - partial matches acceptable
+7. Year plausibility within ±2 years (weight: 0.02)
+
+Matrix/runout matching rules:
+- Normalize before comparing (remove spaces, hyphens, convert to uppercase)
+- Consider partial matches (e.g., "A1" matches "A1/B1")
+- Account for variations (e.g., "SHVL 804 A 1" matches "SHVL-804-A-1")
+- Multiple matrix codes increase confidence
 
 ${discogsReleases.length > 0 ? `
 **IMPORTANT:** Discogs database matches have been provided above. PRIORITIZE these real database entries over AI-generated guesses. When a Discogs release matches the extracted data well, use that release's information to create pressing candidates with high confidence. Include the Discogs ID in the candidate's id field as "discogs-{id}".
+
+For Discogs matches:
+- Start with base score of 0.50 (trusted database source)
+- Add scoring signal weights for each match as listed above
+- Discogs matches with strong identifier matches should score 0.80+
 ` : ''}
 
 **TASK:**
-Generate up to 3 pressing candidates ranked by total score. For each candidate:
-1. Calculate a confidence score (0.0-1.0) based on the scoring signals above
-2. Provide specific evidence snippets explaining why this candidate matched
-3. List all matched identifiers with their sources (including 'discogs_database' when applicable)
+Generate 3-5 pressing candidates ranked by total score. For each candidate:
+1. Calculate a confidence score (0.0-1.0) based on the weighted scoring signals above
+2. Provide 3-5 specific evidence snippets explaining why this candidate matched
+3. List all matched identifiers with their sources and individual confidence scores
 4. Include detailed pressing information
-5. For Discogs-based candidates:
-   - Use format "discogs-{id}" for the id field
-   - Include discogsId as a number
-   - Include discogsUrl as "https://www.discogs.com/release/{id}"
-   - If variant/pressing information is available in Discogs data, include it as discogsVariant
-   - Include imageUrls array if available from Discogs
+5. BE CONSERVATIVE with confidence scores - better to underestimate than overestimate
+6. For ambiguous matches with weak signals, assign confidence < 0.40
 
-If the data is genuinely ambiguous or insufficient, DO NOT fabricate certainty. Return fewer candidates with honest confidence scores rather than padding with guesses.
+For Discogs-based candidates:
+- Use format "discogs-{id}" for the id field
+- Include discogsId as a number
+- Include discogsUrl as "https://www.discogs.com/release/{id}"
+- If variant/pressing information is available in Discogs data, include it as discogsVariant
+- Include imageUrls array if available from Discogs (images array with uri fields)
+
+If the data is genuinely ambiguous or insufficient, DO NOT fabricate certainty. Return fewer candidates with honest confidence scores rather than padding with guesses. Include a "reasoning" field that explains the confidence level honestly.
 
 Return JSON with this structure:
 {
@@ -199,7 +277,7 @@ Return JSON with this structure:
     const response = await spark.llm(prompt, 'gpt-4o', true)
     const result = JSON.parse(response) as { candidates: ScoredPressingCandidate[] }
     
-    return result.candidates.map(candidate => {
+    const processedCandidates = result.candidates.map(candidate => {
       const adjustedConfidence = Math.min(
         candidate.confidence,
         avgImageConfidence * 1.15
@@ -216,6 +294,10 @@ Return JSON with this structure:
         matches: candidate.matches || []
       }
     })
+    
+    const deduplicated = deduplicateCandidates(processedCandidates)
+    
+    return deduplicated.slice(0, 5)
   } catch (error) {
     console.error('Pressing identification failed:', error)
     return []
