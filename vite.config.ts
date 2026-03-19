@@ -19,13 +19,14 @@ export default defineConfig({
     sparkPlugin() as PluginOption,
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: false,
-      filename: 'sw.js',
+      injectRegister: 'auto',
+      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
         name: 'VinylVault - Professional Record Management',
         short_name: 'VinylVault',
         description: 'Professional vinyl record collection management with AI-powered features, marketplace integration, and NFT support',
         start_url: '/',
+        scope: '/',
         display: 'standalone',
         background_color: '#0a0a0f',
         theme_color: '#0a0a0f',
@@ -36,11 +37,19 @@ export default defineConfig({
             src: '/icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: '/icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
           },
           {
             src: '/icons/icon-512.png',
@@ -51,13 +60,16 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts-cache',
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
@@ -65,10 +77,22 @@ export default defineConfig({
             },
           },
           {
+            urlPattern: /\.(png|jpg|jpeg|svg|gif|webp)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
             urlPattern: /^https:\/\/(api\.discogs\.com|api\.ebay\.com|api\.openai\.com|api\.x\.ai|api\.deepseek\.com|musicbrainz\.org)\/.*/i,
             handler: 'NetworkOnly',
           },
         ],
+      },
+      devOptions: {
+        enabled: false,
+        type: 'module',
       },
     }) as PluginOption,
   ],
