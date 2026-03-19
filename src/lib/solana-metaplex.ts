@@ -19,7 +19,6 @@ import {
   Signer as UmiSigner,
   base58,
 } from '@metaplex-foundation/umi'
-import { VersionedTransaction, VersionedMessage } from '@solana/web3.js'
 
 export interface MetaplexMintResult {
   success: boolean
@@ -31,7 +30,7 @@ export interface MetaplexMintResult {
 
 interface BrowserWalletProvider {
   publicKey: { toString: () => string } | null | undefined
-  signTransaction?: (tx: VersionedTransaction) => Promise<VersionedTransaction>
+  signTransaction?: (tx: any) => Promise<any>
   signMessage?: (message: Uint8Array, encoding?: string) => Promise<Uint8Array | { signature: Uint8Array }>
 }
 
@@ -54,15 +53,8 @@ function createBrowserWalletSigner(walletAddress: string, walletType: string): U
     if (typeof provider.signTransaction !== 'function') {
       throw new Error('Wallet does not support signTransaction')
     }
-    const message = VersionedMessage.deserialize(transaction.serializedMessage)
-    const vtx = new VersionedTransaction(message)
-    if (Array.isArray(transaction.signatures) && transaction.signatures.length > 0) {
-      vtx.signatures = transaction.signatures.map(
-        (sig: Uint8Array | null) => sig ?? new Uint8Array(64).fill(0)
-      )
-    }
-    const signed = await provider.signTransaction(vtx)
-    return { ...transaction, signatures: signed.signatures }
+    const signed = await provider.signTransaction(transaction)
+    return signed
   }
 
   return {
