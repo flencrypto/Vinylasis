@@ -10,6 +10,25 @@ A professional vinyl record collection management and dealer operating system th
 **Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
 This is a professional tool for managing valuable collections with multiple interconnected features: collection management, condition grading, market intelligence, listing workflows, and AI-assisted cataloging. It requires multiple specialized views and rich data relationships.
 
+## Getting Started: Discogs API Configuration
+
+**Before using VinylVault's core features, configure your Discogs Personal Access Token for real database matching.**
+
+VinylVault leverages the Discogs database (millions of verified releases) to:
+- ✅ Accurately identify pressings from photos
+- ✅ Match catalog numbers, matrix codes, and variants
+- ✅ Retrieve verified release information
+- ✅ Provide higher confidence matches with provenance
+
+**Setup takes 60 seconds:**
+1. Visit [Discogs Developer Settings](https://www.discogs.com/settings/developers)
+2. Generate a new Personal Access Token (name it "VinylVault")
+3. Copy the token and paste it in Settings → Discogs API
+4. Click Test to verify connection
+5. Start identifying pressings with real database accuracy!
+
+**Note:** All other API keys (OpenAI, eBay, imgBB) are optional and enable additional features, but Discogs is the foundation for accurate pressing identification.
+
 ## Essential Features
 
 ### Collection Dashboard

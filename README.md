@@ -45,29 +45,41 @@ The AI looks for:
 
 ## 🚀 Getting Started
 
-### Prerequisites
-To use the marketplace bargain discovery features, you'll need:
+### Required: Discogs API Token
 
-1. **eBay Developer App ID** (free)
+**VinylVault requires a Discogs Personal Access Token for accurate pressing identification and real database matching.**
+
+#### Quick Setup (60 seconds)
+1. Visit [Discogs Developer Settings](https://www.discogs.com/settings/developers)
+2. Scroll to "Personal Access Tokens" section
+3. Click **"Generate new token"**
+4. Name it "VinylVault" and click Generate
+5. **⚠️ Copy the token immediately** (shown only once!)
+6. Open VinylVault → Settings (⚙️ icon in bottom nav)
+7. Paste token in **"Discogs API → Personal Access Token"** field
+8. Click **"Test"** to verify connection
+9. Click **"Save Settings"**
+
+✅ **That's it!** You can now use pressing identification with verified Discogs database data.
+
+📖 **Need help?** See [DISCOGS_API_SETUP.md](DISCOGS_API_SETUP.md) for detailed instructions and [DISCOGS_TROUBLESHOOTING.md](DISCOGS_TROUBLESHOOTING.md) for common issues.
+
+### Optional: Additional API Keys
+
+To unlock additional features, you can optionally configure:
+
+1. **OpenAI API Key** (for AI-powered grading and listing generation)
+   - Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - Enter in Settings → API Keys
+
+2. **eBay Developer App ID** (for cross-marketplace bargain discovery)
    - Sign up at [developer.ebay.com](https://developer.ebay.com/)
    - Create an application to get your App ID
    - See [MARKETPLACE_GUIDE.md](MARKETPLACE_GUIDE.md) for detailed setup
 
-2. **Discogs API Credentials** (free)
-   - Get a Personal Access Token at [discogs.com/settings/developers](https://www.discogs.com/settings/developers)
-   - OR create an OAuth app for Consumer Key/Secret
-   - See [MARKETPLACE_GUIDE.md](MARKETPLACE_GUIDE.md) for detailed setup
-
-### Quick Start
-1. Open VinylVault
-2. Navigate to the **Bargains** tab
-3. Click the ⚙️ **Settings** icon
-4. Enable eBay and/or Discogs
-5. Enter your API credentials
-6. Click **Test Connection** to verify
-7. Save your settings
-8. Add watchlist items for artists/releases you're hunting
-9. Click **Scan Market** to discover bargains!
+3. **imgBB API Key** (for hosting images in marketplace listings)
+   - Get free key at [api.imgbb.com](https://api.imgbb.com)
+   - Enter in Settings → imgBB API Key
 
 ## 📖 Documentation
 

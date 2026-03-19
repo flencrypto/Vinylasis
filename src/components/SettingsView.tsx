@@ -14,6 +14,7 @@ import { testDiscogsConnection } from '@/lib/marketplace-discogs'
 import { uploadImageToImgBB } from '@/lib/imgbb-service'
 import { DiscogsTestDialog } from '@/components/DiscogsTestDialog'
 import { DiscogsCacheStats } from '@/components/DiscogsCacheStats'
+import DiscogsSetupGuide from '@/components/DiscogsSetupGuide'
 
 interface APIKeys {
   openaiKey: string
@@ -295,6 +296,22 @@ export default function SettingsView() {
           </div>
         </div>
 
+        {!apiKeys?.discogsUserToken ? (
+          <DiscogsSetupGuide
+            onGetStarted={() => {
+              const tokenInput = document.getElementById('discogs-user-token')
+              tokenInput?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              tokenInput?.focus()
+            }}
+            isConfigured={false}
+          />
+        ) : (
+          <DiscogsSetupGuide
+            onGetStarted={() => {}}
+            isConfigured={true}
+          />
+        )}
+
         <Card className="bg-slate-900/50 border-slate-800">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
@@ -338,14 +355,19 @@ export default function SettingsView() {
 
             <Separator className="bg-slate-800" />
 
-            <div className="space-y-4">
+            <div className={`space-y-4 rounded-lg p-4 transition-colors ${apiKeys?.discogsUserToken ? 'bg-green-500/5 border border-green-500/20' : 'bg-accent/5 border border-accent/20'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold text-white">Discogs API</h4>
-                  {apiKeys?.discogsUserToken && (
+                  <Database className={`w-5 h-5 ${apiKeys?.discogsUserToken ? 'text-green-500' : 'text-accent'}`} weight="fill" />
+                  <h4 className="text-base font-bold text-white">Discogs API</h4>
+                  {apiKeys?.discogsUserToken ? (
                     <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 text-xs">
-                      <Database className="w-3 h-3 mr-1" weight="fill" />
+                      <Check className="w-3 h-3 mr-1" weight="bold" />
                       Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs">
+                      Setup Required
                     </Badge>
                   )}
                 </div>
@@ -370,6 +392,15 @@ export default function SettingsView() {
                   </a>
                 </div>
               </div>
+              
+              {apiKeys?.discogsUserToken && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <p className="text-sm text-green-400 flex items-center gap-2">
+                    <Check className="w-4 h-4" weight="bold" />
+                    Real database matching enabled! Your pressing identification results will include verified Discogs catalog data.
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="discogs-user-token" className="text-slate-200 flex items-center gap-2">
