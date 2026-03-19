@@ -12,6 +12,7 @@ import { uploadImageToImgBB } from '@/lib/imgbb-service'
 import { classifyImage } from '@/lib/openai-vision-service'
 import { useConfidenceThresholds } from '@/hooks/use-confidence-thresholds'
 import { toast } from 'sonner'
+import { DragDropImageZone } from '@/components/DragDropImageZone'
 
 interface ImageUploadProps {
   images: ItemImage[]
@@ -85,6 +86,16 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       return
     }
     cameraInputRef.current?.click()
+  }
+
+  const handleFilesDropped = async (files: File[]) => {
+    const fakeEvent = {
+      target: {
+        files: files
+      }
+    } as unknown as React.ChangeEvent<HTMLInputElement>
+    
+    await handleFileSelect(fakeEvent)
   }
 
   const fileToDataUrl = (file: File): Promise<string> => {
@@ -265,7 +276,14 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
   }
 
   return (
-    <div className="space-y-4">
+    <DragDropImageZone 
+      onFilesSelected={handleFilesDropped}
+      maxFiles={maxImages}
+      currentFileCount={images.length}
+      showUploadPrompt={false}
+      className="space-y-4"
+    >
+      <div className="space-y-4">
       <div className="flex items-end gap-3 flex-wrap">
         {!autoDetectType && (
           <div className="flex-1 min-w-[200px] space-y-2">
@@ -454,6 +472,7 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       <p className="text-xs text-muted-foreground">
         Use "Take Photo" to capture images directly with your camera, or "Choose Files" to upload from your device. Upload up to {maxImages} images. {autoDetectType ? 'AI automatically detects image types when photos are added using pattern matching. Use "Auto-Detect All Types" to classify all images at once. Always verify the detected type. ' : ''}{apiKeys?.imgbbKey ? 'Images can be hosted on imgBB for eBay listings.' : 'Configure imgBB API key in Settings to host images for eBay listings.'}
       </p>
-    </div>
+      </div>
+    </DragDropImageZone>
   )
 }

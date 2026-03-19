@@ -27,6 +27,7 @@ import { analyzeVinylImage } from '@/lib/image-analysis-ai'
 import { identifyPressing } from '@/lib/pressing-identification-ai'
 import { analyzeConditionFromImages } from '@/lib/condition-grading-ai'
 import { generateListingCopy } from '@/lib/listing-ai'
+import { DragDropImageZone } from '@/components/DragDropImageZone'
 
 interface RecordBatch {
   id: string
@@ -111,6 +112,58 @@ export function BatchPhotoCaptureDialog({ open, onOpenChange }: BatchPhotoCaptur
     }
 
     toast.success('Photo captured', {
+      description: 'Add more photos or start a new record'
+    })
+  }
+
+  const handleFilesDropped = async (files: File[]) => {
+    if (!currentBatchId) {
+      startNewBatch()
+      setTimeout(() => processDroppedFiles(files), 100)
+    } else {
+      await processDroppedFiles(files)
+    }
+  }
+
+  const processDroppedFiles = async (files: File[]) => {
+    if (!currentBatchId) return
+
+    const validImages: ItemImage[] = []
+    
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue
+
+      const dataUrl = await fileToDataUrl(file)
+      
+      const newImage: ItemImage = {
+        id: `img-${Date.now()}-${Math.random()}`,
+        type: 'front_cover',
+        dataUrl,
+        mimeType: file.type,
+        uploadedAt: new Date().toISOString()
+      }
+
+      validImages.push(newImage)
+    }
+
+    if (validImages.length === 0) {
+      toast.error('No valid image files found')
+      return
+    }
+
+    setBatches(prev => prev.map(batch => 
+      batch.id === currentBatchId
+        ? { ...batch, images: [...batch.images, ...validImages] }
+        : batch
+    ))
+
+    if (apiKeys?.openaiKey) {
+      for (const img of validImages) {
+        autoDetectImageType(currentBatchId, img)
+      }
+    }
+
+    toast.success(`Added ${validImages.length} image${validImages.length !== 1 ? 's' : ''}`, {
       description: 'Add more photos or start a new record'
     })
   }
@@ -306,7 +359,14 @@ export function BatchPhotoCaptureDialog({ open, onOpenChange }: BatchPhotoCaptur
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden">
+          <DragDropImageZone 
+            onFilesSelected={handleFilesDropped}
+            maxFiles={100}
+            currentFileCount={totalPhotos}
+            disabled={isProcessing}
+            showUploadPrompt={false}
+            className="flex-1 overflow-hidden"
+          >
             <ScrollArea className="h-full pr-4">
               <div className="space-y-4">
                 {!apiKeys?.openaiKey && (
@@ -508,7 +568,7 @@ export function BatchPhotoCaptureDialog({ open, onOpenChange }: BatchPhotoCaptur
                 ))}
               </div>
             </ScrollArea>
-          </div>
+          </DragDropImageZone>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
