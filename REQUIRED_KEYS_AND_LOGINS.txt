@@ -1,0 +1,110 @@
+VinylVault - Required API Keys & External Integrations
+Generated: 2025-01-01
+
+This app runs entirely client-side. All API keys are stored in your browser's
+localStorage (synced from the app's KV storage layer). No server-side
+environment variables are required.
+
+To configure: Open the app → Settings tab → paste your keys.
+
+========================================================================
+
+[1] OPENAI (Required for AI features)
+    localStorage key : openai_api_key
+    Purpose          : AI condition grading, image analysis, listing generation,
+                       pressing identification, bargain scoring
+    Get it at        : https://platform.openai.com/api-keys
+    Notes            : Requires a paid OpenAI account with GPT-4 Vision access.
+                       Key format: sk-...
+
+------------------------------------------------------------------------
+
+[2] DISCOGS (Required for marketplace & valuation features)
+    localStorage key : discogs_personal_token
+    Also used as     : discogs_consumer_key (OAuth, if Consumer Key + Secret used)
+    Purpose          : Marketplace search, release valuation, pressing ID,
+                       price history, collection sync
+    Get it at        : https://www.discogs.com/settings/developers
+    Notes            : Free Discogs account required. Generate a Personal Access
+                       Token in your developer settings.
+
+------------------------------------------------------------------------
+
+[3] EBAY DEVELOPER (Required for eBay deal scanning)
+    localStorage keys: ebay_client_id
+                       ebay_client_secret
+    Also used as     : ebay_app_id (alias for ebay_client_id)
+    Purpose          : eBay deal scanning, live listing search, price comparison
+    Get it at        : https://developer.ebay.com/my/keys
+    Notes            : Sign in with your eBay account. Create a Production app
+                       to get App ID (Client ID) and Client Secret.
+
+------------------------------------------------------------------------
+
+[4] IMGBB (Required for image hosting)
+    localStorage key : imgbb_api_key
+    Purpose          : Image hosting for marketplace listings, stable URLs
+                       for eBay and Discogs listings
+    Get it at        : https://api.imgbb.com
+    Notes            : Free account supports up to 32MB per image.
+
+------------------------------------------------------------------------
+
+[5] XAI / GROK (Optional - alternative AI provider)
+    localStorage key : xai_api_key
+    Purpose          : Alternative to OpenAI for record analysis and listing
+                       generation using Grok
+    Get it at        : https://console.x.ai
+    Notes            : Optional. Used as fallback/alternative to OpenAI.
+
+------------------------------------------------------------------------
+
+[6] DEEPSEEK AI (Optional - alternative AI provider)
+    localStorage key : deepseek_api_key
+    Purpose          : Cost-effective alternative AI for analysis and
+                       listing generation
+    Get it at        : https://platform.deepseek.com
+    Notes            : Optional. Competitive pricing vs OpenAI.
+
+------------------------------------------------------------------------
+
+[7] PINATA / IPFS (Optional - required for NFT minting)
+    localStorage key : pinata_jwt
+    Purpose          : IPFS metadata storage for Solana NFT minting
+    Get it at        : https://app.pinata.cloud/developers/api-keys
+    Notes            : Free tier includes 1GB. Use the JWT token (not API key).
+                       Required if you want to mint NFTs for your records.
+
+------------------------------------------------------------------------
+
+[8] TELEGRAM BOT (Optional - deal alert notifications)
+    localStorage keys: telegram_bot_token
+                       telegram_chat_id
+    Purpose          : Push notifications to Telegram when bargains are found
+    Get it at        : https://core.telegram.org/bots#botfather
+    Notes            : Create a bot via @BotFather in Telegram. Get your
+                       chat_id by messaging your bot then calling:
+                       https://api.telegram.org/bot<TOKEN>/getUpdates
+
+========================================================================
+
+QUICK SETUP CHECKLIST:
+  [ ] openai_api_key      - Get from platform.openai.com/api-keys
+  [ ] discogs_personal_token - Get from discogs.com/settings/developers
+  [ ] ebay_client_id      - Get from developer.ebay.com/my/keys
+  [ ] ebay_client_secret  - Get from developer.ebay.com/my/keys
+  [ ] imgbb_api_key       - Get from api.imgbb.com
+  [ ] xai_api_key         - Optional: console.x.ai
+  [ ] deepseek_api_key    - Optional: platform.deepseek.com
+  [ ] pinata_jwt          - Optional (NFTs): app.pinata.cloud
+  [ ] telegram_bot_token  - Optional (alerts): @BotFather on Telegram
+  [ ] telegram_chat_id    - Optional (alerts): from getUpdates API
+
+========================================================================
+
+SECURITY NOTE:
+  All keys are stored in your browser's localStorage only. They are never
+  sent to any server other than the respective API endpoints they authorize.
+  Do NOT commit API keys to version control.
+
+========================================================================
