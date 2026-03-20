@@ -133,13 +133,25 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
 ]
 
 /**
+ * Safe wrapper around localStorage.getItem that returns null without throwing
+ * in restricted environments (e.g. sandboxed iframes, private browsing).
+ */
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+/**
  * Returns the list of localStorage keys that are missing (empty/null) for the given integration.
  */
 export function getMissingKeys(integrationId: string): string[] {
   const integration = INTEGRATIONS.find((i) => i.id === integrationId)
   if (!integration) return []
   return integration.localStorageKeys.filter((key) => {
-    const value = localStorage.getItem(key)
+    const value = safeGetItem(key)
     return !value || value.trim() === ''
   })
 }

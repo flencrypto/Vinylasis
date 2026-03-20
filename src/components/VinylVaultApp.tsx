@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Toaster } from '@/components/ui/sonner'
@@ -23,9 +23,10 @@ import NewListingView from './NewListingView'
 import SettingsView from './SettingsView'
 import MarketplaceComparisonView from './MarketplaceComparisonView'
 import DealScannerView from './DealScannerView'
-import SetupView from './SetupView'
 import PWAUpdatePrompt from './PWAUpdatePrompt'
 import { scanSchedulerService } from '@/lib/scan-scheduler-service'
+
+const SetupView = lazy(() => import('./SetupView'))
 
 type TabValue = 'new-listing' | 'collection' | 'bargains' | 'watchlist' | 'comparison' | 'nfts' | 'deals' | 'ebay-dev' | 'settings' | 'setup'
 
@@ -90,7 +91,9 @@ export default function VinylVaultApp() {
               <SettingsView />
             </TabsContent>
             <TabsContent value="setup" className="m-0 mt-0">
-              <SetupView onGoToSettings={() => setActiveTab('settings')} />
+              <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950" />}>
+                <SetupView onGoToSettings={() => setActiveTab('settings')} />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </main>
