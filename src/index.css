@@ -1,6 +1,31 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
 
+@keyframes splashSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes tonearmSwing {
+  from { transform: rotate(-28deg); }
+  to   { transform: rotate(0deg); }
+}
+
+@keyframes splashPulse {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.12); opacity: 0.7; }
+}
+
+@keyframes splashFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splashDot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%            { transform: scale(1.2); opacity: 1; }
+}
+
 @layer base {
   * {
     @apply border-border
