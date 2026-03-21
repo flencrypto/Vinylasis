@@ -112,21 +112,7 @@ export default function ABTestingDialog({
     toast.success('Title applied to listing')
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleUpdateMetrics = (variantId: string) => {
-    if (!currentTest) return
 
-    const test = updateVariantPerformance(currentTest, variantId, {
-      views: Math.floor(Math.random() * 100) + 50,
-      clicks: Math.floor(Math.random() * 30) + 10,
-      watchlists: Math.floor(Math.random() * 10),
-      messages: Math.floor(Math.random() * 5),
-      sales: Math.floor(Math.random() * 3),
-    })
-
-    setCurrentTest(test)
-    setABTests(tests => (tests || []).map(t => t.id === test.id ? test : t))
-  }
 
   const testToDisplay = currentTest || existingTest
   const testResults = testToDisplay ? determineWinningVariant(testToDisplay) : []

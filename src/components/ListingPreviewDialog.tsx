@@ -25,7 +25,7 @@ interface ListingPreviewDialogProps {
     releaseTitle: string
     year: number
     country: string
-    format: string
+    format: Format
     catalogNumber?: string
   }
   conditionDetails: {
@@ -67,7 +67,7 @@ export function ListingPreviewDialog({
         collectionId: 'temp',
         artistName: recordDetails.artistName,
         releaseTitle: recordDetails.releaseTitle,
-        format: recordDetails.format as Format,
+        format: recordDetails.format,
         year: recordDetails.year,
         country: recordDetails.country,
         catalogNumber: recordDetails.catalogNumber,
@@ -78,7 +78,7 @@ export function ListingPreviewDialog({
         condition: {
           mediaGrade: conditionDetails.mediaGrade,
           sleeveGrade: conditionDetails.sleeveGrade,
-          gradingStandard: 'Goldmine' as 'Goldmine' | 'RecordCollector',
+          gradingStandard: 'Goldmine',
           gradingNotes: listingContent.conditionSummary,
           gradedAt: new Date().toISOString()
         },
@@ -115,7 +115,7 @@ export function ListingPreviewDialog({
         collectionId: 'temp',
         artistName: recordDetails.artistName,
         releaseTitle: recordDetails.releaseTitle,
-        format: recordDetails.format as Format,
+        format: recordDetails.format,
         year: recordDetails.year,
         country: recordDetails.country,
         catalogNumber: recordDetails.catalogNumber,
@@ -126,7 +126,7 @@ export function ListingPreviewDialog({
         condition: {
           mediaGrade: conditionDetails.mediaGrade,
           sleeveGrade: conditionDetails.sleeveGrade,
-          gradingStandard: 'Goldmine' as 'Goldmine' | 'RecordCollector',
+          gradingStandard: 'Goldmine',
           gradingNotes: listingContent.conditionSummary,
           gradedAt: new Date().toISOString()
         },

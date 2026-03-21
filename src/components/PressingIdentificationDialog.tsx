@@ -67,16 +67,6 @@ export function PressingIdentificationDialog({
     }
   }, [candidates, shouldAutoMatch])
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleAddImage = (image: ItemImage) => {
-    setImages(prev => [...prev, image])
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleRemoveImage = (imageId: string) => {
-    setImages(prev => prev.filter(img => img.id !== imageId))
-  }
-
   const handleIdentifyPressing = async () => {
     if (images.length === 0 && !manualHints.artist && !manualHints.catalogNumber) {
       toast.error('Please upload at least one image or provide manual hints')
