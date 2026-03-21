@@ -5,10 +5,10 @@ import SplashScreen from '@/components/SplashScreen'
 function App() {
   const [showSplash, setShowSplash] = useState(true)
 
-  return (
-    <>
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-      <VinylVaultApp />
+  return showSplash ? (
+  <SplashScreen onComplete={() => setShowSplash(false)} />
+) : (
+  <VinylVaultApp />
     </>
   )
 }
