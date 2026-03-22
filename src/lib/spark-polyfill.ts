@@ -103,7 +103,7 @@ export function installSparkPolyfill(): void {
       llmPrompt: llmPromptPolyfill,
       llm: llmPolyfill,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      user: async () => null as unknown as any,
+      user: async () => ({ isAuthenticated: false } as unknown as any),
       kv: localKV,
     }
   }
