@@ -251,7 +251,13 @@ export default function SettingsView() {
       ['telegramChatId', apiKeys.telegramChatId ?? ''],
       ['pinataJwt', apiKeys.pinataJwt ?? ''],
     ]
-    const csv = ['key,value', ...rows.map(([k, v]) => `${k},${v}`)].join('\n')
+    const escapeCsvValue = (v: string) => {
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+        return `"${v.replace(/"/g, '""')}"`
+      }
+      return v
+    }
+    const csv = ['key,value', ...rows.map(([k, v]) => `${k},${escapeCsvValue(v)}`)].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -261,6 +267,13 @@ export default function SettingsView() {
     URL.revokeObjectURL(url)
     toast.success('API keys exported as CSV')
   }
+
+  const VALID_API_KEY_NAMES: ReadonlySet<keyof APIKeys> = new Set([
+    'openaiKey', 'discogsKey', 'discogsSecret', 'discogsUserToken',
+    'ebayClientId', 'ebayClientSecret', 'ebayDevId',
+    'imgbbKey', 'xaiApiKey', 'deepseekApiKey',
+    'telegramBotToken', 'telegramChatId', 'pinataJwt',
+  ])
 
   const handleImportCSV = () => {
     const input = document.createElement('input')
@@ -281,9 +294,13 @@ export default function SettingsView() {
           const commaIdx = line.indexOf(',')
           if (commaIdx === -1) continue
           const key = line.slice(0, commaIdx).trim()
-          const value = line.slice(commaIdx + 1).trim()
+          // Handle CSV-quoted values (e.g., "value with, comma")
+          let value = line.slice(commaIdx + 1).trim()
+          if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.slice(1, -1).replace(/""/g, '"')
+          }
           if (!value) continue
-          if (key in (apiKeys ?? {})) {
+          if (VALID_API_KEY_NAMES.has(key as keyof APIKeys)) {
             (updates as Record<string, string>)[key] = value
             count++
           }

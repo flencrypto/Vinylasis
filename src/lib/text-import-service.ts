@@ -92,8 +92,8 @@ function parseWithRegex(rawText: string): ParsedImportItem[] {
 }
 
 /** Parse free-form text into ParsedImportItems using OpenAI (or regex fallback) */
-export async function parseTextToImportItems(rawText: string): Promise<ParsedImportItem[]> {
-  const apiKey = localStorage.getItem('openai_api_key')
+export async function parseTextToImportItems(rawText: string, openAIKey?: string): Promise<ParsedImportItem[]> {
+  const apiKey = openAIKey || localStorage.getItem('openai_api_key')
 
   if (!apiKey) {
     return parseWithRegex(rawText)

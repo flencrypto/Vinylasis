@@ -68,7 +68,7 @@ function convertToCollectionItem(item: ParsedImportItem): CollectionItem {
 }
 
 export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImportDialogProps) {
-  const [apiKeys] = useKV<{ openaiKey?: string }>('vinyl-vault-api-keys', {})
+  const [apiKeys] = useKV<{ openaiKey?: string; discogsUserToken?: string }>('vinyl-vault-api-keys', {})
 
   const [step, setStep] = useState<Step>('input')
   const [rawText, setRawText] = useState('')
@@ -111,7 +111,7 @@ export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImpor
     }
     setStep('parsing')
     try {
-      const parsed = await parseTextToImportItems(rawText)
+      const parsed = await parseTextToImportItems(rawText, apiKeys?.openaiKey || undefined)
       setItems(parsed)
       setStep('overview')
       toast.success(`Parsed ${parsed.length} record${parsed.length !== 1 ? 's' : ''}`)
@@ -135,7 +135,7 @@ export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImpor
   )
 
   const handleAIAnalyse = async (item: ParsedImportItem) => {
-    const discogsToken = apiKeys?.openaiKey ? undefined : undefined
+    const discogsToken = apiKeys?.discogsUserToken || undefined
     setAnalysingIds((prev) => new Set(prev).add(item.id))
     try {
       const input: PressingIdentificationInput = {
