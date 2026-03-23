@@ -64,37 +64,37 @@ export default function VinylVaultApp() {
 
   const tabContent = (
     <>
-      <TabsContent value="new-listing" className="m-0 mt-0">
+      <TabsContent value="new-listing" className="m-0 p-0">
         <NewListingView />
       </TabsContent>
-      <TabsContent value="collection" className="m-0 mt-0">
+      <TabsContent value="collection" className="m-0 p-0">
         <CollectionView />
       </TabsContent>
-      <TabsContent value="bargains" className="m-0 mt-0">
+      <TabsContent value="bargains" className="m-0 p-0">
         <BargainsView />
       </TabsContent>
-      <TabsContent value="watchlist" className="m-0 mt-0">
+      <TabsContent value="watchlist" className="m-0 p-0">
         <WatchlistView />
       </TabsContent>
-      <TabsContent value="comparison" className="m-0 mt-0">
+      <TabsContent value="comparison" className="m-0 p-0">
         <MarketplaceComparisonView />
       </TabsContent>
-      <TabsContent value="nfts" className="m-0 mt-0">
+      <TabsContent value="nfts" className="m-0 p-0">
         <NFTView />
       </TabsContent>
-      <TabsContent value="deals" className="m-0 mt-0">
+      <TabsContent value="deals" className="m-0 p-0">
         <DealScannerView />
       </TabsContent>
-      <TabsContent value="ebay-dev" className="m-0 mt-0">
+      <TabsContent value="ebay-dev" className="m-0 p-0">
         <EbayDeletionChecklist />
       </TabsContent>
-      <TabsContent value="agents" className="m-0 mt-0">
+      <TabsContent value="agents" className="m-0 p-0">
         <ValuationAgentWorkflow />
       </TabsContent>
-      <TabsContent value="settings" className="m-0 mt-0">
+      <TabsContent value="settings" className="m-0 p-0">
         <SettingsView />
       </TabsContent>
-      <TabsContent value="setup" className="m-0 mt-0">
+      <TabsContent value="setup" className="m-0 p-0">
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950" />}>
           <SetupView onGoToSettings={() => setActiveTab('settings')} />
         </Suspense>
@@ -103,16 +103,12 @@ export default function VinylVaultApp() {
   )
 
   if (isDesktop) {
-    // Desktop layout: fixed sidebar + full-height content area (single Tabs root)
+    // Desktop layout: fixed sidebar nav + full-height scrollable content
     return (
       <>
         <Toaster />
         <PWAUpdatePrompt />
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as TabValue)}
-          className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex-row gap-0"
-        >
+        <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
           {/* Sidebar */}
           <aside className="flex flex-col w-56 flex-shrink-0 bg-slate-950/95 border-r border-slate-800 overflow-y-auto">
             {/* Branding */}
@@ -129,27 +125,31 @@ export default function VinylVaultApp() {
             </div>
 
             {/* Nav items */}
-            <TabsList className="flex flex-col w-full bg-transparent border-0 p-2 gap-0.5 h-auto">
+            <nav className="flex flex-col p-2 gap-0.5">
               {navItems.map(({ value, icon: Icon, label }) => (
-                <TabsTrigger
+                <button
                   key={value}
-                  value={value}
-                  className="w-full justify-start gap-3 px-3 py-2.5 rounded-lg text-left data-[state=active]:bg-slate-800/60 data-[state=active]:text-accent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-0 transition-colors"
+                  onClick={() => setActiveTab(value as TabValue)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors w-full ${
+                    activeTab === value
+                      ? 'bg-slate-800/60 text-accent'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
+                  }`}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" weight="fill" />
                   <span className="text-sm font-medium">{label}</span>
-                </TabsTrigger>
+                </button>
               ))}
-            </TabsList>
+            </nav>
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 overflow-y-auto min-h-0">
-            <div className="max-w-6xl w-full mx-auto p-6">
+          <main className="flex-1 min-w-0 overflow-y-auto">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full">
               {tabContent}
-            </div>
+            </Tabs>
           </main>
-        </Tabs>
+        </div>
       </>
     )
   }
