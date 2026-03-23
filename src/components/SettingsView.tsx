@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap, Lightning, Database, CloudArrowUp, TestTube, Question, Robot, PaperPlaneTilt, BellRinging, Copy, DownloadSimple, UploadSimple, FileArrowUp } from '@phosphor-icons/react'
+import { Key, Check, Eye, EyeSlash, Info, Brain, Detective, Image, GraduationCap, Lightning, Database, CloudArrowUp, TestTube, Question, Robot, PaperPlaneTilt, BellRinging, Copy, DownloadSimple, UploadSimple, FileArrowUp, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { testDiscogsConnection } from '@/lib/marketplace-discogs'
 import { uploadImageToImgBB } from '@/lib/imgbb-service'
@@ -152,6 +152,7 @@ export default function SettingsView() {
   const [testingDiscogs, setTestingDiscogs] = useState(false)
   const [testingImgBB, setTestingImgBB] = useState(false)
   const [showDiscogsTestDialog, setShowDiscogsTestDialog] = useState(false)
+  const [showExportWarning, setShowExportWarning] = useState(false)
 
   const handleKeyChange = (key: keyof APIKeys, value: string) => {
     setApiKeys((current = {
@@ -258,6 +259,11 @@ export default function SettingsView() {
   }
 
   const handleExportCSV = () => {
+    if (!showExportWarning) {
+      setShowExportWarning(true)
+      return
+    }
+    setShowExportWarning(false)
     if (!apiKeys) return
     const rows: [string, string][] = [
       ['openaiKey', apiKeys.openaiKey ?? ''],
@@ -1034,13 +1040,23 @@ export default function SettingsView() {
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={showExportWarning ? 'destructive' : 'outline'}
                     onClick={handleExportCSV}
-                    className="gap-1.5 border-slate-600 text-slate-300 hover:bg-slate-800 text-xs h-8"
+                    className={`gap-1.5 text-xs h-8 ${showExportWarning ? '' : 'border-slate-600 text-slate-300 hover:bg-slate-800'}`}
                   >
                     <DownloadSimple className="w-3.5 h-3.5" />
-                    Export CSV
+                    {showExportWarning ? 'Confirm Export (keys are plaintext)' : 'Export CSV'}
                   </Button>
+                  {showExportWarning && (
+                    <button
+                      onClick={() => setShowExportWarning(false)}
+                      className="text-xs text-slate-400 hover:text-slate-200 px-2"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  {!showExportWarning && (
+                    <>
                   <Button
                     size="sm"
                     variant="outline"
@@ -1059,7 +1075,15 @@ export default function SettingsView() {
                     <FileArrowUp className="w-3.5 h-3.5" />
                     Import .env
                   </Button>
+                    </>
+                  )}
                 </div>
+                {showExportWarning && (
+                  <p className="text-xs text-amber-400 flex items-start gap-1 mt-1">
+                    <Warning className="w-3 h-3 mt-0.5 flex-shrink-0" weight="fill" />
+                    The CSV file will contain your API keys in plain text. Store it securely and never share it.
+                  </p>
+                )}
               </div>
             </div>
 

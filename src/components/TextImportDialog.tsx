@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, type ChangeEvent } from 'react'
 import { useKV } from '@github/spark/hooks'
 import {
   Dialog,
@@ -88,7 +88,7 @@ export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImpor
     setAnalysingIds(new Set())
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
@@ -148,7 +148,7 @@ export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImpor
           labelName: item.labelName,
           catalogNumber: item.catalogNumber,
         },
-        discogsSearchEnabled: false,
+        discogsSearchEnabled: !!discogsToken,
         discogsApiToken: discogsToken,
       }
       const candidates = await identifyPressing(input)
@@ -228,7 +228,16 @@ export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImpor
               {/* File upload */}
               <div
                 className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-accent/60 hover:bg-slate-800/50 transition-all"
+                role="button"
+                tabIndex={0}
+                aria-label="Upload a text file by browsing or dragging and dropping a .txt file"
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    fileInputRef.current?.click()
+                  }
+                }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault()
@@ -373,7 +382,7 @@ export function TextImportDialog({ open, onOpenChange, onItemsAdded }: TextImpor
               <Button
                 size="sm"
                 onClick={handleDone}
-                disabled={!allConfirmed}
+                disabled={confirmedCount === 0}
                 className="gap-1.5 bg-accent hover:bg-accent/90"
               >
                 <Check size={16} weight="bold" />
@@ -586,7 +595,20 @@ function EditPanel({ item, onUpdate, onClose }: EditPanelProps) {
   const [draft, setDraft] = useState<ParsedImportItem>({ ...item })
 
   const handleSave = () => {
-    onUpdate(item.id, draft)
+    const normalized: ParsedImportItem = { ...draft }
+
+    // Normalize year: clamp to a valid range, fall back to item's original year
+    const rawYear = Number(normalized.year)
+    normalized.year = Number.isFinite(rawYear) && rawYear > 0
+      ? rawYear
+      : (item.year > 0 ? item.year : 1970)
+
+    // Normalize optional string fields: empty string → undefined
+    if (normalized.labelName === '') normalized.labelName = undefined
+    if (normalized.catalogNumber === '') normalized.catalogNumber = undefined
+    if (normalized.notes === '') normalized.notes = undefined
+
+    onUpdate(item.id, normalized)
     onClose()
   }
 
