@@ -18,6 +18,7 @@ import { ItemImage, Format, FORMAT_LABELS, ImageAnalysisResult } from '@/lib/typ
 import { analyzeVinylImage } from '@/lib/image-analysis-ai'
 import { identifyPressing, ScoredPressingCandidate } from '@/lib/pressing-identification-ai'
 import { Sparkle, CheckCircle, Warning, Info, Database, Lightning } from '@phosphor-icons/react'
+import { VinylReveal } from '@/components/VinylReveal'
 import { toast } from 'sonner'
 
 interface PressingIdentificationDialogProps {
@@ -45,6 +46,7 @@ export function PressingIdentificationDialog({
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [candidates, setCandidates] = useState<ScoredPressingCandidate[]>([])
+  const [showReveal, setShowReveal] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null)
   const [autoMatchedCandidate, setAutoMatchedCandidate] = useState<ScoredPressingCandidate | null>(null)
   const [discogsEnabled, setDiscogsEnabled] = useState(true)
@@ -134,6 +136,7 @@ export function PressingIdentificationDialog({
           description: 'Try adding more images or manual hints'
         })
       } else {
+        setShowReveal(true)
         const highConfCount = results.filter(r => r.confidenceBand === 'high').length
         toast.success(`Found ${results.length} pressing candidate${results.length > 1 ? 's' : ''}`, {
           description: highConfCount > 0 ? `${highConfCount} high confidence match${highConfCount > 1 ? 'es' : ''}` : 'Review matches and select the best one'
@@ -172,6 +175,7 @@ export function PressingIdentificationDialog({
     })
     setOcrRunoutValues('')
     setCandidates([])
+    setShowReveal(false)
     setSelectedCandidate(null)
     setAutoMatchedCandidate(null)
   }
@@ -213,7 +217,7 @@ export function PressingIdentificationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) setShowReveal(false); onOpenChange(isOpen) }}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -225,7 +229,14 @@ export function PressingIdentificationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {autoMatchedCandidate && (
+        {showReveal && candidates.length > 0 && (
+          <VinylReveal
+            candidates={candidates}
+            onRevealComplete={() => setShowReveal(false)}
+          />
+        )}
+
+        {!showReveal && autoMatchedCandidate && (
           <Alert className="bg-accent/10 border-accent">
             <Lightning size={20} weight="fill" className="text-accent" />
             <AlertDescription>
@@ -234,7 +245,7 @@ export function PressingIdentificationDialog({
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+        <div className={showReveal ? 'hidden' : 'grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4'}>
           <div className="space-y-6">
             <div>
               <h3 className="font-semibold mb-3">Image Upload</h3>
