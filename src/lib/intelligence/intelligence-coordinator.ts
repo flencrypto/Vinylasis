@@ -119,9 +119,12 @@ class VinylIntelligenceCoordinator {
   async runFullCycle({
     releaseData = null,
     photoFile = null,
+    matrixOverride = null,
   }: {
     releaseData?: Record<string, unknown> | null
     photoFile?: File | null
+    /** Explicit matrix string (e.g. user-supplied deadwax text). Used when no photo/OCR is available. */
+    matrixOverride?: string | null
   } = {}): Promise<CycleResult> {
     console.group('🚀 Vinyl Intelligence Cycle')
     const start = performance.now()
@@ -147,9 +150,15 @@ class VinylIntelligenceCoordinator {
       }
 
       // 3. Pressing identification (matrix search + enhanced comparison)
+      // Prefer an explicit matrixOverride, then releaseData.ocrMatrixOverride, then OCR output.
+      const resolvedMatrix =
+        matrixOverride ??
+        (releaseData?.ocrMatrixOverride as string | undefined) ??
+        ocrResult?.matrix?.join('\n') ??
+        ''
       const pressing = await this._identifyPressing(
         releaseData,
-        ocrResult?.matrix?.join('\n') ?? ''
+        resolvedMatrix
       )
       result.steps!.push({
         step: 'Pressing ID',

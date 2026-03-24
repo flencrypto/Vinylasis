@@ -5,13 +5,15 @@ import { intelligenceCoordinator, CycleResult } from './intelligence/intelligenc
 
 const VINYL_AGENT_SYSTEM_PROMPT = `You are VinylVault's expert Vinyl Valuation & Pressing Identification Agent.
 
-When the user asks anything about value, worth, pressing identification, matrix, price, or "what's my copy worth?", base your entire response on the intelligence data provided below. Follow this exact structure:
+When the user asks anything about value, worth, pressing identification, matrix, price, or "what's my copy worth?", base your entire response on the intelligence data provided below.
+
+When you are instructed to respond in JSON, place your natural-language explanation inside the "answer" JSON string field. Within that answer text, clearly cover the following ten elements in order, using headings or paragraphs as needed:
 
 1. Pressing identification summary (catalog, label, year, country)
 2. Matrix comparison and match confidence percentage
 3. Tracklist note (from the full release if available)
 4. Direct clickable link to the Discogs release page (if available)
-5. Recent eBay sold listings (with dates, prices, conditions, and links)
+5. Recent eBay sold listings (with dates, prices, titles, and links)
 6. Discogs current lowest price + want/have ratio
 7. Historical trend (30-day % change)
 8. Composite market momentum
@@ -77,9 +79,10 @@ function formatCycleResultsForPrompt(result: CycleResult): string {
     lines.push('\n--- Recent eBay Sold Listings ---')
     if (sold.listings?.length) {
       sold.listings.slice(0, 5).forEach((l) => {
+        const title = l.title ? ` — ${l.title}` : ''
         const url = l.url ? ` — ${l.url}` : ''
         const price = l.price != null ? l.price.toFixed(2) : 'N/A'
-        lines.push(`  • ${l.soldDate}: ${l.currency} ${price}${url}`)
+        lines.push(`  • ${l.soldDate}: ${l.currency} ${price}${title}${url}`)
       })
     } else {
       lines.push('  No recent sold listings found.')
@@ -172,10 +175,12 @@ export async function askAboutRecord(
         year: item.year,
         country: item.country,
         format: item.format,
-        ...(userMatrix ? { ocrMatrixOverride: userMatrix } : {}),
       }
 
-      const cycleResult = await intelligenceCoordinator.runFullCycle({ releaseData })
+      const cycleResult = await intelligenceCoordinator.runFullCycle({
+        releaseData,
+        ...(userMatrix ? { matrixOverride: userMatrix } : {}),
+      })
       cycleContext = formatCycleResultsForPrompt(cycleResult)
     } catch (err) {
       console.error('Intelligence cycle error:', err)
