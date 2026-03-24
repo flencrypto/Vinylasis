@@ -20,9 +20,6 @@ const defaultTheme = {
   extend: {
     screens: {
       'xs': '480px',
-      coarse: { raw: "(pointer: coarse)" },
-      fine: { raw: "(pointer: fine)" },
-      pwa: { raw: "(display-mode: standalone)" },
     },
     colors: {
       neutral: {
