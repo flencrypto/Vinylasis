@@ -401,13 +401,14 @@ export default function NewListingView() {
   return (
     <div className="p-6 space-y-6 relative">
       <BarcodeScannerWidget variant="fab" onScanComplete={handleBarcodeScanned} />
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Upload className="w-7 h-7" weight="bold" />
-            New Listing
+          <h2 className="text-2xl font-bold flex items-center gap-2.5">
+            <Upload className="w-7 h-7 text-white flex-shrink-0" weight="bold" />
+            <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">New Listing</span>
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             Upload photos for AI-powered record identification and listing creation
           </p>
         </div>
@@ -415,7 +416,7 @@ export default function NewListingView() {
           <Button
             variant="outline"
             onClick={() => setShowBatchUpload(true)}
-            className="gap-2"
+            className="gap-2 border-slate-700/60 bg-slate-900/50 hover:bg-slate-800/70 hover:border-slate-600 transition-all duration-200"
           >
             <Files size={18} weight="fill" />
             Batch Upload
@@ -423,13 +424,13 @@ export default function NewListingView() {
           <Button
             variant="outline"
             onClick={() => setShowBatchCapture(true)}
-            className="gap-2"
+            className="gap-2 border-slate-700/60 bg-slate-900/50 hover:bg-slate-800/70 hover:border-slate-600 transition-all duration-200"
           >
             <Stack size={18} weight="fill" />
             Bulk Capture
           </Button>
           {hasResults && (
-            <Button variant="outline" onClick={handleReset} className="gap-2">
+            <Button variant="outline" onClick={handleReset} className="gap-2 border-slate-700/60 bg-slate-900/50 hover:bg-slate-800/70 transition-all duration-200">
               <Plus className="w-5 h-5" />
               Start New
             </Button>
@@ -439,14 +440,14 @@ export default function NewListingView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
-          <Card className="p-6">
+          <Card className="p-6 bg-slate-900/60 backdrop-blur-md border border-slate-700/50">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <ImageIcon className="w-5 h-5" />
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-100">
+                <ImageIcon className="w-5 h-5 text-accent" />
                 Upload Photos
               </h3>
               {images.length > 0 && (
-                <Badge variant="secondary">{images.length} image{images.length !== 1 ? 's' : ''}</Badge>
+                <Badge variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">{images.length} image{images.length !== 1 ? 's' : ''}</Badge>
               )}
             </div>
             
@@ -457,7 +458,7 @@ export default function NewListingView() {
                 <Button 
                   onClick={handleAnalyze} 
                   disabled={isAnalyzing}
-                  className="w-full gap-2"
+                  className="w-full gap-2 bg-gradient-to-r from-accent/90 to-accent hover:from-accent hover:to-accent/90 text-accent-foreground font-semibold shadow-lg shadow-accent/20 transition-all duration-200"
                   size="lg"
                 >
                   {isAnalyzing ? (
@@ -477,9 +478,9 @@ export default function NewListingView() {
           </Card>
 
           {isAnalyzing && (
-            <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <CircleNotch className="w-5 h-5 animate-spin text-primary" />
+            <Card className="p-6 bg-slate-900/60 backdrop-blur-md border border-accent/20 bg-gradient-to-br from-slate-900/80 to-accent/5">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-100">
+                <CircleNotch className="w-5 h-5 animate-spin text-accent" />
                 AI Analysis in Progress
               </h3>
               <div className="space-y-3">
@@ -507,10 +508,10 @@ export default function NewListingView() {
         <div className="space-y-6">
           {hasResults && analysisResult && conditionResult && listingContent && (
             <>
-              <Card className="p-6">
+              <Card className="p-6 bg-slate-900/60 backdrop-blur-md border border-slate-700/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Disc className="w-5 h-5" />
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-100">
+                    <Disc className="w-5 h-5 text-accent" />
                     Record Details
                   </h3>
                   <ConfidenceBadge confidence={analysisResult.confidence} />
@@ -564,25 +565,25 @@ export default function NewListingView() {
                 </div>
               </Card>
 
-              <Card className="p-6">
+              <Card className="p-6 bg-slate-900/60 backdrop-blur-md border border-slate-700/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Condition Grading</h3>
+                  <h3 className="text-lg font-semibold text-slate-100">Condition Grading</h3>
                   <ConfidenceBadge confidence={conditionResult.aiConfidence} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Media Grade</Label>
+                    <Label className="text-xs text-slate-500">Media Grade</Label>
                     <div className="mt-1">
-                      <Badge variant="outline" className="text-lg px-4 py-1">
+                      <Badge variant="outline" className="text-lg px-4 py-1 border-accent/40 text-accent">
                         {conditionResult.mediaGrade}
                       </Badge>
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Sleeve Grade</Label>
+                    <Label className="text-xs text-slate-500">Sleeve Grade</Label>
                     <div className="mt-1">
-                      <Badge variant="outline" className="text-lg px-4 py-1">
+                      <Badge variant="outline" className="text-lg px-4 py-1 border-accent/40 text-accent">
                         {conditionResult.sleeveGrade}
                       </Badge>
                     </div>
@@ -591,16 +592,16 @@ export default function NewListingView() {
 
                 {conditionResult.gradingNotes && (
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-2 block">Grading Notes</Label>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <Label className="text-xs text-slate-500 mb-2 block">Grading Notes</Label>
+                    <p className="text-sm text-slate-400 leading-relaxed">
                       {conditionResult.gradingNotes}
                     </p>
                   </div>
                 )}
               </Card>
 
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Marketplace Listing</h3>
+              <Card className="p-6 bg-slate-900/60 backdrop-blur-md border border-slate-700/50">
+                <h3 className="text-lg font-semibold mb-4 text-slate-100">Marketplace Listing</h3>
 
                 <div className="space-y-4">
                   <div>
@@ -629,7 +630,7 @@ export default function NewListingView() {
 
                   <div>
                     <Label className="text-xs text-muted-foreground mb-2 block">Description Preview</Label>
-                    <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-4 max-h-40 overflow-y-auto">
+                    <div className="text-sm text-slate-400 bg-slate-800/50 rounded-md p-4 max-h-40 overflow-y-auto border border-slate-700/40">
                       {listingContent.description.slice(0, 200)}...
                     </div>
                   </div>
@@ -663,7 +664,7 @@ export default function NewListingView() {
               <div className="flex gap-3">
                 <Button 
                   onClick={handleAddToCollection}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 bg-gradient-to-r from-accent/90 to-accent hover:from-accent hover:to-accent/80 text-accent-foreground font-semibold shadow-lg shadow-accent/20 transition-all duration-200"
                   size="lg"
                 >
                   <CheckCircle className="w-5 h-5" weight="fill" />
@@ -672,7 +673,7 @@ export default function NewListingView() {
                 <Button 
                   variant="outline"
                   onClick={() => setShowPreview(true)}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 border-slate-700/60 bg-slate-900/50 hover:bg-slate-800/70 hover:border-slate-600 transition-all duration-200"
                   size="lg"
                 >
                   View Full Listing
@@ -682,13 +683,13 @@ export default function NewListingView() {
           )}
 
           {!hasResults && !isAnalyzing && images.length === 0 && (
-            <Card className="p-12 text-center border-dashed">
-              <Disc size={64} className="mx-auto mb-4 text-muted-foreground opacity-50" weight="thin" />
-              <h3 className="text-xl font-semibold mb-2">Get Started</h3>
-              <p className="text-muted-foreground mb-4">
+            <Card className="p-12 text-center border-dashed border-slate-700/50 bg-slate-900/40 backdrop-blur-md">
+              <Disc size={64} className="mx-auto mb-4 text-slate-600 opacity-60" weight="thin" />
+              <h3 className="text-xl font-semibold mb-2 text-slate-200">Get Started</h3>
+              <p className="text-slate-500 mb-4">
                 Upload photos of your vinyl record to begin AI analysis
               </p>
-              <div className="text-sm text-muted-foreground space-y-1">
+              <div className="text-sm text-slate-600 space-y-1">
                 <p>📸 Front and back cover</p>
                 <p>🏷️ Record labels</p>
                 <p>🔍 Runout/matrix numbers</p>
