@@ -1,7 +1,6 @@
 import { Disc } from '@phosphor-icons/react'
 import type { ElementType } from 'react'
-
-type TabValue = 'new-listing' | 'collection' | 'bargains' | 'watchlist' | 'comparison' | 'nfts' | 'deals' | 'ebay-dev' | 'agents' | 'settings' | 'setup'
+import type { TabValue } from '@/lib/types'
 
 interface NavItem {
   value: TabValue

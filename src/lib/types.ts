@@ -4,6 +4,7 @@ export type ItemStatus = 'owned' | 'for_sale' | 'sold' | 'traded' | 'archived'
 export type SourceType = 'shop' | 'ebay' | 'discogs' | 'fair' | 'gift' | 'unknown'
 export type Format = 'LP' | '7in' | '12in' | 'EP' | 'Boxset'
 export type NFTRarity = 'Common' | 'Uncommon' | 'Rare' | 'Ultra Rare' | 'Legendary'
+export type TabValue = 'new-listing' | 'collection' | 'bargains' | 'watchlist' | 'comparison' | 'nfts' | 'deals' | 'ebay-dev' | 'agents' | 'settings' | 'setup'
 
 export interface Artist {
   id: string

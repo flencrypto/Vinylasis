@@ -1,7 +1,6 @@
 import type { ElementType } from 'react'
+import type { TabValue } from '@/lib/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-type TabValue = 'new-listing' | 'collection' | 'bargains' | 'watchlist' | 'comparison' | 'nfts' | 'deals' | 'ebay-dev' | 'agents' | 'settings' | 'setup'
 
 interface NavItem {
   value: TabValue

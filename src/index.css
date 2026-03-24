@@ -49,6 +49,37 @@
   }
 }
 
+/* ─── App Layout Containers ─────────────────────────────────────────────── */
+@layer components {
+  /* Root shell: full-viewport, no overflow */
+  .app-layout {
+    display: flex;
+    height: 100dvh;
+    overflow: hidden;
+    background: linear-gradient(135deg, oklch(0.07 0.02 265), oklch(0.10 0.02 265), oklch(0.07 0.02 265));
+  }
+
+  /* Mobile: vertical stack — header / content / nav */
+  .app-layout--mobile {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  /* Desktop: horizontal — sidebar / content */
+  .app-layout--desktop {
+    flex-direction: row;
+    width: 100vw;
+  }
+
+  /* Scrollable content pane (fills remaining space) */
+  .app-content {
+    flex: 1 1 0%;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+  }
+}
+
 :root {
   --background: oklch(0.10 0.02 265);
   --foreground: oklch(0.95 0.01 265);
