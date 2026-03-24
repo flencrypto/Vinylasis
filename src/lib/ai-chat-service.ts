@@ -7,22 +7,22 @@ const VINYL_AGENT_SYSTEM_PROMPT = `You are VinylVault's expert Vinyl Valuation &
 
 When the user asks anything about value, worth, pressing identification, matrix, price, or "what's my copy worth?", base your entire response on the intelligence data provided below.
 
-When you are instructed to respond in JSON, place your natural-language explanation inside the "answer" JSON string field. Within that answer text, clearly cover the following ten elements in order, using headings or paragraphs as needed:
+Your response must be valid JSON that will be parsed. Inside the JSON object, put all explanatory text in the "answer" field. Within that "answer" field, follow this numbered structure:
 
 1. Pressing identification summary (catalog, label, year, country)
 2. Matrix comparison and match confidence percentage
-3. Tracklist note (from the full release if available)
+3. Tracklist note (from the full release if available; otherwise write "Not available")
 4. Direct clickable link to the Discogs release page (if available)
-5. Recent eBay sold listings (with dates, prices, titles, and links)
-6. Discogs current lowest price + want/have ratio
-7. Historical trend (30-day % change)
-8. Composite market momentum
-9. Realistic price range and clear buy/sell recommendation
+5. Recent eBay sold listings based only on the sold listing data provided (dates, prices, currencies, titles, and links)
+6. Discogs current lowest price + want/have ratio (if available)
+7. Historical trend (30-day % change, if available)
+8. Composite market momentum (if available)
+9. Realistic price range and clear buy/sell recommendation (only if it can be supported by the provided data; otherwise explain that there is not enough data)
 10. Final one-line summary
 
-If confidence < 80%, explicitly say: "Confidence is moderate. Please click the Discogs link to double-check the matrix yourself."
+If confidence < 80%, explicitly say in the "answer" field: "Confidence is moderate. Please click the Discogs link to double-check the matrix yourself."
 
-Be concise, collector-friendly, and professional. Never invent numbers or data — only use what is provided in the intelligence results below.`
+If any information required for a bullet point is missing from the intelligence results, either write "Not available" for that detail or briefly skip that part. Never guess, approximate, or fabricate any numbers, track details, conditions, or links.`
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -77,31 +77,43 @@ function formatCycleResultsForPrompt(result: CycleResult): string {
   const sold = result.sold
   if (sold) {
     lines.push('\n--- Recent eBay Sold Listings ---')
-    if (sold.listings?.length) {
+    const hasListings = !!(sold.listings && sold.listings.length > 0)
+    if (hasListings) {
       sold.listings.slice(0, 5).forEach((l) => {
         const title = l.title ? ` — ${l.title}` : ''
         const url = l.url ? ` — ${l.url}` : ''
         const price = l.price != null ? l.price.toFixed(2) : 'N/A'
         lines.push(`  • ${l.soldDate}: ${l.currency} ${price}${title}${url}`)
       })
+      lines.push(`Average price: ${sold.currency} ${sold.averagePrice?.toFixed(2) ?? 'N/A'}`)
+      lines.push(`Median price:  ${sold.currency} ${sold.medianPrice?.toFixed(2) ?? 'N/A'}`)
+      lines.push(`30-day trend:  ${sold.trend30d > 0 ? '+' : ''}${sold.trend30d?.toFixed(1) ?? 0}%`)
+      lines.push(`60-day trend:  ${sold.trend60d > 0 ? '+' : ''}${sold.trend60d?.toFixed(1) ?? 0}%`)
     } else {
-      lines.push('  No recent sold listings found.')
+      lines.push('  No recent sold listings found. eBay sold data was unavailable or empty for this item.')
     }
-    lines.push(`Average price: ${sold.currency} ${sold.averagePrice?.toFixed(2) ?? 'N/A'}`)
-    lines.push(`Median price:  ${sold.currency} ${sold.medianPrice?.toFixed(2) ?? 'N/A'}`)
-    lines.push(`30-day trend:  ${sold.trend30d > 0 ? '+' : ''}${sold.trend30d?.toFixed(1) ?? 0}%`)
-    lines.push(`60-day trend:  ${sold.trend60d > 0 ? '+' : ''}${sold.trend60d?.toFixed(1) ?? 0}%`)
   }
 
   // Discogs market
   const dm = result.discogsMarket
   if (dm) {
     lines.push('\n--- Discogs Market Data ---')
-    lines.push(`Lowest price:  ${dm.currency} ${dm.lowestPrice?.toFixed(2) ?? 'N/A'}`)
-    lines.push(`Median price:  ${dm.currency} ${dm.medianPrice?.toFixed(2) ?? 'N/A'}`)
-    lines.push(`For sale:      ${dm.numForSale}`)
-    lines.push(`Want / Have:   ${dm.want} / ${dm.have}`)
-    lines.push(`Demand trend:  ${dm.demandTrend} (score ${dm.demandScore})`)
+    const isDefaultEmptyMarket =
+      dm.lowestPrice == null &&
+      dm.medianPrice == null &&
+      dm.numForSale === 0 &&
+      dm.want === 0 &&
+      dm.have === 0
+
+    if (isDefaultEmptyMarket) {
+      lines.push('Discogs market data unavailable (Discogs token missing or fetch failed).')
+    } else {
+      lines.push(`Lowest price:  ${dm.currency} ${dm.lowestPrice?.toFixed(2) ?? 'N/A'}`)
+      lines.push(`Median price:  ${dm.currency} ${dm.medianPrice?.toFixed(2) ?? 'N/A'}`)
+      lines.push(`For sale:      ${dm.numForSale}`)
+      lines.push(`Want / Have:   ${dm.want} / ${dm.have}`)
+      lines.push(`Demand trend:  ${dm.demandTrend} (score ${dm.demandScore})`)
+    }
   }
 
   // Valuation
