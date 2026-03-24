@@ -136,10 +136,13 @@ export function VinylReveal({ candidates, onRevealComplete, previewAudioUrl }: V
     if (needleScope.current) {
       await animateNeedle(needleScope.current, { rotate: -38 }, { duration: 0.65, ease: 'easeInOut' })
     }
-    await startAudio()
+    // Fire audio in the background — never block the reveal flow on audio state.
+    // AudioContext.resume() requires a user gesture on Safari/iOS and can hang
+    // indefinitely if called without one, which would prevent onRevealComplete.
+    startAudio().catch(() => { /* silent */ })
 
     setTimeout(() => {
-      // Fade out audio
+      // Fade out audio if it started
       if (gainRef.current && audioCtxRef.current) {
         gainRef.current.gain.linearRampToValueAtTime(0, audioCtxRef.current.currentTime + 1.2)
       }
@@ -149,6 +152,13 @@ export function VinylReveal({ candidates, onRevealComplete, previewAudioUrl }: V
   }, [animateNeedle, needleScope, onRevealComplete, startAudio])
 
   useEffect(() => {
+    // Hard safety backstop: always call onRevealComplete after 8 s even if
+    // the animation sequence encounters an unexpected error.
+    const safetyTimer = setTimeout(() => {
+      setPhase('done')
+      onRevealComplete()
+    }, 8000)
+
     const run = async () => {
       // 3.5 full spins, then needle drops
       await new Promise<void>(resolve => {
@@ -178,11 +188,12 @@ export function VinylReveal({ candidates, onRevealComplete, previewAudioUrl }: V
     window.addEventListener('keydown', handleKey)
 
     return () => {
+      clearTimeout(safetyTimer)
       window.removeEventListener('keydown', handleKey)
       crackleSourceRef.current?.stop()
       audioCtxRef.current?.close()
     }
-    // needleDrop is stable after mount; only run once
+    // needleDrop and onRevealComplete are stable after mount; only run once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -281,10 +292,24 @@ export function VinylReveal({ candidates, onRevealComplete, previewAudioUrl }: V
           )}
         </motion.div>
 
-        {/* Hint */}
-        <p className="text-xs text-muted-foreground/50 mt-1">
-          Drag to spin · Space to boost
-        </p>
+        {/* Hint + skip */}
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground/50">
+            Drag to spin · Space to boost
+          </p>
+          <button
+            onClick={() => {
+              if (gainRef.current && audioCtxRef.current) {
+                gainRef.current.gain.linearRampToValueAtTime(0, audioCtxRef.current.currentTime + 0.3)
+              }
+              setPhase('done')
+              onRevealComplete()
+            }}
+            className="text-xs text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors"
+          >
+            Skip to results
+          </button>
+        </div>
       </motion.div>
     </AnimatePresence>
   )
