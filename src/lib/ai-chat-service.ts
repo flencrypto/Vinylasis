@@ -1,4 +1,119 @@
 import { CollectionItem } from './types'
+import { intelligenceCoordinator, CycleResult } from './intelligence/intelligence-coordinator'
+
+// ── System prompt for the Vinyl Valuation & Pressing Agent ────────────────
+
+const VINYL_AGENT_SYSTEM_PROMPT = `You are VinylVault's expert Vinyl Valuation & Pressing Identification Agent.
+
+When the user asks anything about value, worth, pressing identification, matrix, price, or "what's my copy worth?", base your entire response on the intelligence data provided below. Follow this exact structure:
+
+1. Pressing identification summary (catalog, label, year, country)
+2. Matrix comparison and match confidence percentage
+3. Tracklist note (from the full release if available)
+4. Direct clickable link to the Discogs release page (if available)
+5. Recent eBay sold listings (with dates, prices, conditions, and links)
+6. Discogs current lowest price + want/have ratio
+7. Historical trend (30-day % change)
+8. Composite market momentum
+9. Realistic price range and clear buy/sell recommendation
+10. Final one-line summary
+
+If confidence < 80%, explicitly say: "Confidence is moderate. Please click the Discogs link to double-check the matrix yourself."
+
+Be concise, collector-friendly, and professional. Never invent numbers or data — only use what is provided in the intelligence results below.`
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+const VALUATION_KEYWORDS =
+  /\b(valu|worth|price|priced|pricing|pressing|matrix|runout|deadwax|sell|selling|sold|buy|buying|bought|how much|market|trend|ebay|discogs|estimate|apprais)\b|what.{0,3}s it/i
+
+function isValuationQuestion(question: string): boolean {
+  return VALUATION_KEYWORDS.test(question)
+}
+
+/** Extract a matrix string the user typed (e.g. "Matrix is SHVL 817 A-1U") */
+function extractUserMatrix(question: string): string {
+  const match = question.match(
+    /(?:matrix|runout|deadwax)\s+(?:is\s+|:?\s*)([A-Z0-9 \-./]+(?:etched|stamped)?)/i
+  )
+  return match ? match[1].trim() : ''
+}
+
+function formatCycleResultsForPrompt(result: CycleResult): string {
+  if (result.status === 'error') {
+    return `Intelligence cycle encountered an error: ${result.error ?? 'unknown'}`
+  }
+  if (result.status !== 'complete') {
+    return 'Intelligence cycle did not complete.'
+  }
+
+  const lines: string[] = ['=== INTELLIGENCE CYCLE RESULTS ===']
+
+  // Pressing
+  const p = result.pressing
+  if (p) {
+    lines.push('\n--- Pressing Identification ---')
+    if (p.artistName) lines.push(`Artist: ${p.artistName}`)
+    if (p.releaseTitle) lines.push(`Title: ${p.releaseTitle}`)
+    if (p.catalogNumber) lines.push(`Catalog: ${p.catalogNumber}`)
+    if (p.year) lines.push(`Year: ${p.year}`)
+    if (p.country) lines.push(`Country: ${p.country}`)
+    lines.push(`Match confidence: ${Math.round((p.matchScore ?? 0) * 100)}%`)
+    if (p.variantNotes) lines.push(`Variant notes: ${p.variantNotes}`)
+    if (result.ocrMatrix?.length) {
+      lines.push(`OCR matrix strings: ${result.ocrMatrix.join(' | ')}`)
+    }
+    if (p.matrix?.length) {
+      lines.push(`Discogs matrix strings: ${p.matrix.join(' | ')}`)
+    }
+    if (p.matchedVariantId) {
+      lines.push(`Discogs release link: https://www.discogs.com/release/${p.matchedVariantId}`)
+    }
+  }
+
+  // eBay sold listings
+  const sold = result.sold
+  if (sold) {
+    lines.push('\n--- Recent eBay Sold Listings ---')
+    if (sold.listings?.length) {
+      sold.listings.slice(0, 5).forEach((l) => {
+        const url = l.url ? ` — ${l.url}` : ''
+        const price = l.price != null ? l.price.toFixed(2) : 'N/A'
+        lines.push(`  • ${l.soldDate}: ${l.currency} ${price}${url}`)
+      })
+    } else {
+      lines.push('  No recent sold listings found.')
+    }
+    lines.push(`Average price: ${sold.currency} ${sold.averagePrice?.toFixed(2) ?? 'N/A'}`)
+    lines.push(`Median price:  ${sold.currency} ${sold.medianPrice?.toFixed(2) ?? 'N/A'}`)
+    lines.push(`30-day trend:  ${sold.trend30d > 0 ? '+' : ''}${sold.trend30d?.toFixed(1) ?? 0}%`)
+    lines.push(`60-day trend:  ${sold.trend60d > 0 ? '+' : ''}${sold.trend60d?.toFixed(1) ?? 0}%`)
+  }
+
+  // Discogs market
+  const dm = result.discogsMarket
+  if (dm) {
+    lines.push('\n--- Discogs Market Data ---')
+    lines.push(`Lowest price:  ${dm.currency} ${dm.lowestPrice?.toFixed(2) ?? 'N/A'}`)
+    lines.push(`Median price:  ${dm.currency} ${dm.medianPrice?.toFixed(2) ?? 'N/A'}`)
+    lines.push(`For sale:      ${dm.numForSale}`)
+    lines.push(`Want / Have:   ${dm.want} / ${dm.have}`)
+    lines.push(`Demand trend:  ${dm.demandTrend} (score ${dm.demandScore})`)
+  }
+
+  // Valuation
+  const v = result.valuation
+  if (v) {
+    lines.push('\n--- Synthesised Valuation ---')
+    lines.push(`Price range:   ${v.currency} ${v.estimateLow.toFixed(2)} – ${v.estimateHigh.toFixed(2)} (mid ${v.estimateMid.toFixed(2)})`)
+    lines.push(`Confidence:    ${Math.round(v.confidence * 100)}%`)
+    lines.push(`Signal:        ${v.momentumSignal}`)
+    lines.push(`Rationale:     ${v.rationale}`)
+  }
+
+  lines.push('\n=== END INTELLIGENCE RESULTS ===')
+  return lines.join('\n')
+}
 
 export interface ChatMessage {
   id: string
@@ -38,9 +153,41 @@ export async function askAboutRecord(
   allItems: CollectionItem[],
   conversationHistory: ChatMessage[]
 ): Promise<{ answer: string; suggestedCorrections?: ChatCorrection[] }> {
-  const contextPrompt = spark.llmPrompt`You are a vinyl record expert assistant for VinylVault, a professional record collection management system.
+  // ── Valuation / pressing path: run the full intelligence cycle first ──
+  const needsIntelligence = isValuationQuestion(question)
+  let cycleContext = ''
 
-Context about this record:
+  if (needsIntelligence) {
+    try {
+      const discogsToken =
+        localStorage.getItem('discogs_personal_token') ?? null
+      await intelligenceCoordinator.init(discogsToken)
+
+      const userMatrix = extractUserMatrix(question)
+      const releaseData: Record<string, unknown> = {
+        ...(item.discogsData ?? {}),
+        artistName: item.artistName,
+        releaseTitle: item.releaseTitle,
+        catalogNumber: item.catalogNumber,
+        year: item.year,
+        country: item.country,
+        format: item.format,
+        ...(userMatrix ? { ocrMatrixOverride: userMatrix } : {}),
+      }
+
+      const cycleResult = await intelligenceCoordinator.runFullCycle({ releaseData })
+      cycleContext = formatCycleResultsForPrompt(cycleResult)
+    } catch (err) {
+      console.error('Intelligence cycle error:', err)
+      cycleContext = '(Intelligence cycle unavailable — answering from record metadata only.)'
+    }
+  }
+
+  const systemSection = needsIntelligence
+    ? `${VINYL_AGENT_SYSTEM_PROMPT}\n\n${cycleContext}\n\n`
+    : 'You are a vinyl record expert assistant for VinylVault, a professional record collection management system.\n\n'
+
+  const contextPrompt = spark.llmPrompt`${systemSection}Context about this record:
 - Artist: ${item.artistName}
 - Title: ${item.releaseTitle}
 - Format: ${item.format}
@@ -56,7 +203,9 @@ User's question: ${question}
 Previous conversation context:
 ${conversationHistory.slice(-4).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
-Provide a helpful, knowledgeable answer about this record. If you notice any potential data quality issues (incorrect artist name spelling, wrong year, unusual catalog number format, etc.), mention them naturally in your response.
+${needsIntelligence
+  ? 'Use the intelligence results above to answer. Follow the structured format specified in the system prompt.'
+  : 'Provide a helpful, knowledgeable answer about this record. If you notice any potential data quality issues (incorrect artist name spelling, wrong year, unusual catalog number format, etc.), mention them naturally in your response.'}
 
 Format your response as JSON with:
 {
