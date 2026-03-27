@@ -19,7 +19,7 @@ export default function MobileHeader({ envLabel, modeLabel }: MobileHeaderProps)
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-xl font-bold leading-tight truncate bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-              VinylVault
+              Vinylaysis
             </h1>
             <p className="text-[10px] sm:text-xs text-slate-500 truncate leading-tight">
               {envLabel} · {modeLabel}

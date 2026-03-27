@@ -182,7 +182,7 @@ export default function SetupView({ onGoToSettings }: SetupViewProps) {
         <div>
           <h2 className="text-2xl font-bold text-white">Integration Setup</h2>
           <p className="text-slate-400 mt-1 text-sm">
-            Configure external services to unlock all VinylVault features. All keys are stored
+            Configure external services to unlock all Vinylaysis features. All keys are stored
             locally in your browser.
           </p>
         </div>

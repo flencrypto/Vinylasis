@@ -172,7 +172,7 @@ export default function MarketplaceComparisonView() {
         currency: 'GBP',
         condition: 'NM',
         url: 'https://discogs.com/sell/item/234567',
-        seller: 'VinylVault_UK',
+        seller: 'Vinylaysis_UK',
         location: 'London, UK',
         shipping: 3.50,
         listedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),

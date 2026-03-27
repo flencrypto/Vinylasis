@@ -108,7 +108,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           <circle cx="100" cy="100" r="36" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
           <circle cx="100" cy="100" r="28" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="1" />
 
-          {/* Label text - VV monogram */}
+          {/* Label text - VA monogram */}
           <text
             x="100"
             y="96"
@@ -131,7 +131,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
             fontFamily="ui-sans-serif, system-ui, sans-serif"
             letterSpacing="2"
           >
-            VAULT
+            AYSIS
           </text>
 
           {/* Spindle hole */}
@@ -200,7 +200,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         }}
       >
         <h1 className="text-4xl font-bold tracking-tight text-white">
-          Vinyl<span className="text-amber-400">Vault</span>
+          Vinyl<span className="text-amber-400">aysis</span>
         </h1>
         <p className="mt-2 text-sm text-slate-400 tracking-widest uppercase">
           Record Management

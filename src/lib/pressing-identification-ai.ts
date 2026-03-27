@@ -148,7 +148,7 @@ export async function identifyPressing(
     discogsReleases = await searchDiscogsDatabase(searchQuery, input.discogsApiToken)
   }
 
-  const prompt = spark.llmPrompt`You are the Pressing Identification Specialist for VinylVault. Your job is to identify the most probable pressing variant with the highest achievable precision given the available data. You MUST NOT output structural error messages such as "fail", "error", "unable to determine", or "unknown variant" as a top-level response — instead, represent uncertainty through low confidence scores (< 0.40) and honest reasoning text. Always return at least one candidate so the user has a starting point; never silently abort.
+  const prompt = spark.llmPrompt`You are the Pressing Identification Specialist for Vinylaysis. Your job is to identify the most probable pressing variant with the highest achievable precision given the available data. You MUST NOT output structural error messages such as "fail", "error", "unable to determine", or "unknown variant" as a top-level response — instead, represent uncertainty through low confidence scores (< 0.40) and honest reasoning text. Always return at least one candidate so the user has a starting point; never silently abort.
 
 Follow this exact workflow:
 
@@ -423,7 +423,7 @@ export async function searchDiscogsDatabase(
     searchParams.append('per_page', '10')
 
     const headers: HeadersInit = {
-      'User-Agent': 'VinylVault/1.0',
+      'User-Agent': 'Vinylaysis/1.0',
       'Authorization': `Discogs token=${apiToken}`,
     }
 

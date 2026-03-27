@@ -1,5 +1,5 @@
 /**
- * VinylVault Bitcoin Ordinals Service
+ * Vinylaysis Bitcoin Ordinals Service
  *
  * Handles Unisat / Xverse wallet connection and Bitcoin Ordinals inscriptions
  * for vinyl record authenticity certificates.
@@ -202,7 +202,7 @@ export const bitcoinOrdinalsService = {
     }
 
     const inscriptionPayload = {
-      p: 'vinylvault-cert',
+      p: 'vinylaysis-cert',
       op: 'mint',
       token_id: tokenId,
       artist: metadata.artist || '',
@@ -225,7 +225,7 @@ export const bitcoinOrdinalsService = {
     }
 
     // Fallback: sign the JSON payload as a message (proof of intent).
-    const message = `VinylVault Certificate\n${contentJson}`
+    const message = `Vinylaysis Certificate\n${contentJson}`
     let signature: string
 
     if (_walletType === 'unisat') {

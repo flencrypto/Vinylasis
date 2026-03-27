@@ -1,8 +1,8 @@
 /**
- * VinylVault MultiversX Service
+ * Vinylaysis MultiversX Service
  *
  * Handles xPortal Web / DeFi wallet connection and ESDT NFT minting via the
- * VinylVault certificate smart contract on the MultiversX blockchain.
+ * Vinylaysis certificate smart contract on the MultiversX blockchain.
  *
  * Dependencies: MultiversX xPortal Web browser extension.
  *
@@ -206,7 +206,7 @@ export const multiversxService = {
 
   /**
    * Mint a vinyl-record certificate NFT on MultiversX via the deployed
-   * VinylVault smart contract.
+   * Vinylaysis smart contract.
    *
    * Calls the `mintCertificate` endpoint with hex-encoded record attributes.
    */

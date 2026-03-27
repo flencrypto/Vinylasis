@@ -291,7 +291,7 @@ export default function SettingsView() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'vinylvault-api-keys.csv'
+    a.download = 'vinylaysis-api-keys.csv'
     a.click()
     URL.revokeObjectURL(url)
     toast.success('API keys exported as CSV')
@@ -601,7 +601,7 @@ export default function SettingsView() {
                           <li>Visit <a href="https://www.discogs.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Discogs Developer Settings</a></li>
                           <li>Scroll to "Personal Access Tokens" section</li>
                           <li>Click "Generate new token"</li>
-                          <li>Name it "VinylVault" and click Generate</li>
+                          <li>Name it "Vinylaysis" and click Generate</li>
                           <li>Copy the token immediately (shown only once!)</li>
                           <li>Paste it above and click Test</li>
                         </ol>
@@ -1262,7 +1262,7 @@ export default function SettingsView() {
             <CardTitle className="text-white text-sm">About</CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-slate-400 space-y-2">
-            <p>VinylVault v1.0.0</p>
+            <p>Vinylaysis v1.0.0</p>
             <p>All API keys are stored securely on your device and never shared.</p>
           </CardContent>
         </Card>

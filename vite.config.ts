@@ -29,8 +29,8 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
-        name: 'VinylVault - Professional Record Management',
-        short_name: 'VinylVault',
+        name: 'Vinylaysis - Professional Record Management',
+        short_name: 'Vinylaysis',
         description: 'Professional vinyl record collection management with AI-powered features, marketplace integration, and NFT support',
         // Use the configured base so the PWA installs correctly on both
         // root-deployed (Netlify, base='/') and subdirectory (GitHub Pages,

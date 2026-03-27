@@ -104,7 +104,7 @@ export interface CycleResult {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const DISCOGS_USER_AGENT = 'VinylVaultPro/1.0'
+const DISCOGS_USER_AGENT = 'VinylalysisPro/1.0'
 const EBAY_VINYL_CATEGORY = '176985'
 
 // ── Class ──────────────────────────────────────────────────────────────────

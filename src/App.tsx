@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import VinylVaultApp from '@/components/VinylVaultApp'
+import VinylalyisApp from '@/components/VinylVaultApp'
 import SplashScreen from '@/components/SplashScreen'
 
 function App() {
@@ -8,7 +8,7 @@ function App() {
   return showSplash ? (
     <SplashScreen onComplete={() => setShowSplash(false)} />
   ) : (
-    <VinylVaultApp />
+    <VinylalyisApp />
   )
 }
 

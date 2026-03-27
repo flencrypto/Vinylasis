@@ -190,7 +190,7 @@ export class ScanSchedulerService {
         console.log(`[ScanScheduler] Added ${newBargainsFound} new bargains from scan: ${schedule.name}`)
         
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('VinylVault - New Bargains Found!', {
+          new Notification('Vinylaysis - New Bargains Found!', {
             body: `Found ${newBargainsFound} new bargains from "${schedule.name}"`,
             icon: '/icon-192.png',
             tag: 'vinyl-vault-bargains',

@@ -148,7 +148,7 @@ export async function searchDiscogsMarketplace(
   }
 
   const headers: HeadersInit = {
-    'User-Agent': 'VinylVault/1.0 +https://github.com/vinylvault',
+    'User-Agent': 'Vinylaysis/1.0 +https://github.com/flencrypto/thevinylvault',
   }
 
   if (config.userToken) {
@@ -283,7 +283,7 @@ export async function scanDiscogsForBargains(
 
 export async function getDiscogsReleaseInfo(releaseId: number, config: DiscogsApiConfig) {
   const headers: HeadersInit = {
-    'User-Agent': 'VinylVault/1.0',
+    'User-Agent': 'Vinylaysis/1.0',
   }
 
   if (config.userToken) {
@@ -320,7 +320,7 @@ export async function testDiscogsConnection(config: DiscogsApiConfig): Promise<{
 
   try {
     const headers: HeadersInit = {
-      'User-Agent': 'VinylVault/1.0 +https://github.com/vinylvault',
+      'User-Agent': 'Vinylaysis/1.0 +https://github.com/flencrypto/thevinylvault',
       'Authorization': `Discogs token=${trimmedToken}`,
     }
 

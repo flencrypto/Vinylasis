@@ -1,5 +1,5 @@
 /**
- * VinylVault Design Tokens
+ * Vinylaysis Design Tokens
  *
  * Typed, curated design tokens derived from:
  *   - src/index.css CSS variables (runtime)

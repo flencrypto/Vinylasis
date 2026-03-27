@@ -86,7 +86,7 @@ export function buildNFTMetadata(config: NFTMintConfig): SolanaNFTMetadata {
     symbol: config.symbol,
     description: config.description,
     image: config.imageUrl,
-    external_url: `https://vinylvault.app/items/${config.itemId}`,
+    external_url: `https://vinylaysis.app/items/${config.itemId}`,
     attributes: config.attributes,
     properties: {
       category: 'image',
