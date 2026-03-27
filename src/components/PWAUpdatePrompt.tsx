@@ -84,7 +84,7 @@ export default function PWAUpdatePrompt() {
                 Update Available
               </h3>
               <p className="text-xs text-muted-foreground mb-3">
-                A new version of VinylVault is ready. Update now for the latest features and improvements.
+                A new version of Vinylaysis is ready. Update now for the latest features and improvements.
               </p>
               <div className="flex gap-2">
                 <Button
@@ -125,7 +125,7 @@ export default function PWAUpdatePrompt() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-foreground mb-1">
-                Install VinylVault
+                Install Vinylaysis
               </h3>
               <p className="text-xs text-muted-foreground mb-3">
                 Install this app on your device for quick access and offline support.

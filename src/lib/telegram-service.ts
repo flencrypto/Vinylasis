@@ -257,7 +257,7 @@ class TelegramService {
 
     const ctaLine =
       tier.tier !== 'good_deal'
-        ? '\n\n⚡ Auto-buy threshold met — check VinylVault Deals page'
+        ? '\n\n⚡ Auto-buy threshold met — check Vinylaysis Deals page'
         : ''
 
     return (
@@ -334,7 +334,7 @@ class TelegramService {
   /** Send a test message to verify bot token and chat ID. */
   async testConnection(): Promise<boolean> {
     await this._sendMessage(
-      '✅ <b>VinylVault connected!</b>\n\nTelegram alerts are working correctly. You will receive deal notifications here when undervalued vinyl is detected.',
+      '✅ <b>Vinylaysis connected!</b>\n\nTelegram alerts are working correctly. You will receive deal notifications here when undervalued vinyl is detected.',
       false,
     )
     return true

@@ -256,7 +256,7 @@ export function WalletConnect({ className }: WalletConnectProps) {
               Connect Solana Wallet
             </DialogTitle>
             <DialogDescription>
-              Choose a wallet to connect to VinylVault for NFT minting
+              Choose a wallet to connect to Vinylaysis for NFT minting
             </DialogDescription>
           </DialogHeader>
 

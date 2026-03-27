@@ -322,7 +322,7 @@ class DealScannerService {
     const releaseId = record.discogsReleaseId || record.release_id
     if (releaseId) {
       try {
-        const discogsHeaders: Record<string, string> = { 'User-Agent': 'VinylVault/1.0' }
+        const discogsHeaders: Record<string, string> = { 'User-Agent': 'Vinylaysis/1.0' }
         if (discogsToken) {
           discogsHeaders['Authorization'] = `Discogs token=${discogsToken}`
         }

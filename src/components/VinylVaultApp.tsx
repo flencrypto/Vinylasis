@@ -33,7 +33,7 @@ import type { TabValue } from '@/lib/types'
 
 const SetupView = lazy(() => import('./SetupView'))
 
-export default function VinylVaultApp() {
+export default function VinylalyisApp() {
   const [activeTab, setActiveTab] = useKV<TabValue>('vinyl-vault-active-tab', 'new-listing')
   const { isPWA, isIOS, isAndroid } = useDeviceDetect()
 

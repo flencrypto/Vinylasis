@@ -30,7 +30,7 @@ export default function DesktopSidebar({ navItems, activeTab, onTabChange, envLa
         </div>
         <div className="min-w-0">
           <h1 className="text-base font-bold leading-tight truncate bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-            VinylVault
+            Vinylaysis
           </h1>
           <p className="text-[10px] text-slate-500 truncate leading-tight">
             {envLabel} · {modeLabel}

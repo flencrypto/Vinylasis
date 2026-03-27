@@ -241,7 +241,7 @@ export async function prepareNFTMetadataFromItem(
   }
   
   description += `\n━━━━━━━━━━━━━━━━━━━━\n`
-  description += `This NFT represents a verified physical vinyl record in the VinylVault collection.\n`
+  description += `This NFT represents a verified physical vinyl record in the Vinylaysis collection.\n`
   description += `It provides immutable on-chain provenance, authenticity tracking, and ownership history.\n`
   description += `The physical record is stored at: ${item.storageLocation || 'Secure location'}\n`
 
