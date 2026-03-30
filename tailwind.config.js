@@ -116,6 +116,15 @@ const defaultTheme = {
       "glass": "0 20px 40px -15px rgba(232, 192, 106, 0.3)",
       "gold-glow": "0 0 25px #e8c06a",
     },
+    keyframes: {
+      vinylSpin: {
+        '0%': { transform: 'rotate(0deg)' },
+        '100%': { transform: 'rotate(360deg)' },
+      },
+    },
+    animation: {
+      'vinyl-spin': 'vinylSpin 30s linear infinite',
+    },
   },
   spacing: {
     px: "var(--size-px)",

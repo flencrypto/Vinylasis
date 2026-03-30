@@ -1,7 +1,7 @@
 // v2/lib/valuation-service.ts
 'use server'; // Mark as server-only (Phase 1 broker enforcement)
 
-import { DiscogsService } from '@/components/discogs-service'; // existing service (rate-limit aware)
+import { DiscogsService } from '@/services/discogs-service'; // existing service (rate-limit aware)
 import { CollectionItem, MediaGrade, SleeveGrade } from './types'; // adjust path as needed
 
 // ── Public interfaces (unchanged but fully documented) ──
@@ -295,3 +295,8 @@ export function useValuationService() {
   const service = new ValuationService();
   return { generateDetailedValuation: service.generateDetailedValuation.bind(service) };
 }
+
+// Lightweight function exports for modules that expect standalone helpers.
+const valuationServiceSingleton = new ValuationService();
+export const fetchComparableSales = valuationServiceSingleton.fetchComparableSales.bind(valuationServiceSingleton);
+export const generateDetailedValuation = valuationServiceSingleton.generateDetailedValuation.bind(valuationServiceSingleton);
