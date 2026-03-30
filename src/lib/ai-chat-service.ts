@@ -6,7 +6,8 @@ import { ValuationService } from './valuation-service';
 import { VinylAppraiser } from './vinyl-appraiser';
 import type { CollectionItem } from './types';
 
-const VINYL_AGENT_SYSTEM_PROMPT = `You are Vinylasis's expert Vinyl Valuation & Pressing Identification Agent.
+const VINYL_AGENT_SYSTEM_PROMPT = `You are Vinylasis's expert Vinyl Valuation & Pressing Identification Agent.`;
+
 // ── Interfaces (kept exactly as in your original spec) ──
 export interface ChatMessage {
   id: string;

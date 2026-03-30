@@ -1,12 +1,15 @@
 /**
- * Tests for the pure utility functions in title-pattern-optimizer.ts.
+ * Tests for utility functions in title-pattern-optimizer.ts.
  *
  * Covers:
  *  - getPatternRecommendation
  *  - analyzeWinningPatterns
  *
- * Note: generateOptimizedTitleFromPatterns() calls spark.llm which is
- * unavailable in the Vitest node environment and is intentionally not tested.
+ * Note: analyzeWinningPatterns() is non-deterministic — it calls
+ * extractPatterns() which generates UUIDs via uuidv4(), so pattern IDs
+ * are not asserted for exact values. generateOptimizedTitleFromPatterns()
+ * calls spark.llm which is unavailable in the Vitest node environment
+ * and is intentionally not tested.
  */
 
 import { describe, it, expect } from 'vitest'

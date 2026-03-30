@@ -1,5 +1,5 @@
 /**
- * Tests for the pure utility functions in helpers.ts.
+ * Tests for utility functions in helpers.ts.
  *
  * Covers:
  *  - formatCurrency
@@ -9,8 +9,11 @@
  *  - generatePriceEstimate
  *  - calculateCollectionValue
  *
- * Note: internal helpers (calculateBaseValue, getConditionMultiplier, etc.)
- * are not directly exported and are covered indirectly through the public API.
+ * Note: generatePriceEstimate() is non-deterministic — it populates
+ * comparableSales via Math.random(), so those fields are not asserted
+ * for exact values. Internal helpers (calculateBaseValue,
+ * getConditionMultiplier, etc.) are not directly exported and are
+ * covered indirectly through the public API.
  */
 
 import { describe, it, expect } from 'vitest'
