@@ -1,11 +1,14 @@
 import { CollectionItem } from '@/lib/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { VinylDisc } from '@/components/ui/vinyl-disc'
 import { colors } from '@/lib/design-tokens'
 import { getGradeColor, getStatusColor, formatCurrency, generatePriceEstimate } from '@/lib/helpers'
 import { FORMAT_LABELS, STATUS_LABELS } from '@/lib/types'
 import { TrendBadge } from './TrendIndicator'
+import { ArrowSquareOut } from '@phosphor-icons/react'
+import { EbaySoldResearchService } from '@/services/ebay-sold-research'
 import React, { useMemo } from 'react'
 
 /** Maps a vinyl media grade to the VinylDisc label colour token. */
@@ -22,6 +25,12 @@ interface ItemCardProps {
 
 export const ItemCard = React.memo(function ItemCard({ item, onItemClick }: ItemCardProps) {
   const estimate = generatePriceEstimate(item)
+
+  const soldResearchLink = EbaySoldResearchService.forVinyl({
+    artist: item.artistName,
+    title: item.releaseTitle,
+    catalogNumber: item.catalogNumber,
+  })
 
   const trendData = useMemo(() => {
     if (!item.priceHistory || item.priceHistory.length < 2) {
@@ -118,6 +127,20 @@ export const ItemCard = React.memo(function ItemCard({ item, onItemClick }: Item
               </div>
             </div>
           </div>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={(e) => e.stopPropagation()}
+            asChild
+          >
+            <a href={soldResearchLink} target="_blank" rel="noopener noreferrer">
+              <ArrowSquareOut size={14} />
+              eBay Sold Comps
+            </a>
+          </Button>
         </div>
       </CardContent>
     </Card>

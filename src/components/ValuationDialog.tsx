@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { TrendUp, TrendDown, Minus, ChartLine, Tag, Clock, X } from '@phosphor-icons/react'
+import { TrendUp, TrendDown, Minus, ChartLine, Tag, Clock, X, ArrowSquareOut } from '@phosphor-icons/react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { EbaySoldResearchService } from '@/services/ebay-sold-research'
 
 interface ValuationDialogProps {
   open: boolean
@@ -57,6 +58,12 @@ export function ValuationDialog({ open, onOpenChange, item }: ValuationDialogPro
     return <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">Low Confidence</Badge>
   }
 
+  const soldResearchLink = EbaySoldResearchService.forVinyl({
+    artist: item.artistName,
+    title: item.releaseTitle,
+    catalogNumber: item.catalogNumber,
+  })
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -72,6 +79,14 @@ export function ValuationDialog({ open, onOpenChange, item }: ValuationDialogPro
                 <Badge variant="outline">{item.country}</Badge>
                 <Badge variant="outline">{item.format}</Badge>
                 {item.catalogNumber && <Badge variant="outline" className="font-mono text-xs">{item.catalogNumber}</Badge>}
+              </div>
+              <div className="mt-2">
+                <Button variant="outline" size="sm" className="gap-1.5 h-6 text-xs px-2" asChild>
+                  <a href={soldResearchLink} target="_blank" rel="noopener noreferrer">
+                    <ArrowSquareOut size={13} />
+                    eBay Sold Comps
+                  </a>
+                </Button>
               </div>
             </div>
           </div>

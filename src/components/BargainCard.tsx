@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Sparkle, TrendUp, ArrowSquareOut, Eye, EyeSlash, Trash } from '@phosphor-icons/react'
 import { formatCurrency } from '@/lib/helpers'
+import { EbaySoldResearchService } from '@/services/ebay-sold-research'
 import { motion } from 'framer-motion'
 
 interface BargainCardProps {
@@ -34,6 +35,14 @@ const SIGNAL_COLORS: Record<string, string> = {
 
 export function BargainCard({ bargain, onView, onDelete, onMarkViewed }: BargainCardProps) {
   const { listing, bargainScore, estimatedValue, estimatedUpside, signals, matchedRelease } = bargain
+
+  const soldResearchLink = matchedRelease
+    ? EbaySoldResearchService.forVinyl({
+        artist: matchedRelease.artistName,
+        title: matchedRelease.releaseTitle,
+        catalogNumber: matchedRelease.catalogNumber,
+      })
+    : EbaySoldResearchService.getDeepLink(listing.title)
 
   const scoreColor = 
     bargainScore >= 80 ? 'text-green-400' :
@@ -166,6 +175,17 @@ export function BargainCard({ bargain, onView, onDelete, onMarkViewed }: Bargain
               <a href={listing.url} target="_blank" rel="noopener noreferrer">
                 <ArrowSquareOut size={18} />
                 View Listing
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              title="Open eBay UK Sold Research"
+              asChild
+            >
+              <a href={soldResearchLink} target="_blank" rel="noopener noreferrer">
+                <ArrowSquareOut size={16} />
+                Sold Comps
               </a>
             </Button>
             <Button
