@@ -289,20 +289,6 @@ export class ValuationService {
   }
 }
 
-// Convenience function exports so callers can use them without instantiating the class.
-const defaultService = new ValuationService();
-
-export function fetchComparableSales(
-  item: CollectionItem,
-  options?: { maxResults?: number; recencyDays?: number; includeInternal?: boolean },
-) {
-  return defaultService.fetchComparableSales(item, options);
-}
-
-export function generateDetailedValuation(item: CollectionItem, comps?: ComparableSale[]) {
-  return defaultService.generateDetailedValuation(item, comps);
-}
-
 // Optional React hook for easy consumption in v2 pages
 export function useValuationService() {
   const service = new ValuationService();
