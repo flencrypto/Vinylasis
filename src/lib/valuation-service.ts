@@ -1,5 +1,4 @@
-// v2/lib/valuation-service.ts
-'use server'; // Mark as server-only (Phase 1 broker enforcement)
+// valuation-service.ts
 
 import { DiscogsService } from '@/services/discogs-service'; // existing service (rate-limit aware)
 import { CollectionItem, MediaGrade, SleeveGrade } from './types'; // adjust path as needed
