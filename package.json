@@ -109,6 +109,7 @@
         ]
     },
     "overrides": {
-        "flatted": "^3.4.1"
+        "flatted": "^3.4.1",
+        "serialize-javascript": ">=7.0.5"
     }
 }
