@@ -1,7 +1,7 @@
 // valuation-service.ts
 
-import { DiscogsService } from '@/components/discogs-service';
-import { CollectionItem, MediaGrade, SleeveGrade } from './types';
+import { DiscogsService } from '@/services/discogs-service'; // existing service (rate-limit aware)
+import { CollectionItem, MediaGrade, SleeveGrade } from './types'; // adjust path as needed
 
 // ── Public interfaces (unchanged but fully documented) ──
 export interface ComparableSale {
@@ -102,14 +102,14 @@ export class ValuationService {
     // We fetch releases + marketplace data as proxy; real sold history requires paid access.
     try {
       const query = `${item.artistName} ${item.releaseTitle} ${item.format || 'LP'}`;
-      const releases = await this.discogs.searchReleases(query, { limit: maxResults });
+      const response = await this.discogs.searchDatabase({ query, per_page: maxResults });
 
-      return releases.map((r: any) => ({
+      return response.results.map((r) => ({
         id: `discogs-${r.id}`,
         source: 'discogs' as const,
         externalId: r.id.toString(),
         title: r.title,
-        soldPrice: r.lowestPrice || 0,
+        soldPrice: 0, // Discogs search results do not include price; use getReleasePriceStats for pricing
         currency: 'GBP', // marketplace prices are often GBP
         conditionMedia: 'Unknown',
         conditionSleeve: 'Unknown',
@@ -308,3 +308,8 @@ export function useValuationService() {
   const service = new ValuationService();
   return { generateDetailedValuation: service.generateDetailedValuation.bind(service) };
 }
+
+// Lightweight function exports for modules that expect standalone helpers.
+const valuationServiceSingleton = new ValuationService();
+export const fetchComparableSales = valuationServiceSingleton.fetchComparableSales.bind(valuationServiceSingleton);
+export const generateDetailedValuation = valuationServiceSingleton.generateDetailedValuation.bind(valuationServiceSingleton);
