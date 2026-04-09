@@ -131,12 +131,29 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
   }
 
   const handleTestDiscogs = async () => {
-    const discogsToTest = {
-      userToken: tempConfig.discogs?.userToken || globalDiscogs.userToken || undefined,
-      consumerKey: tempConfig.discogs?.consumerKey || globalDiscogs.consumerKey || undefined,
-      consumerSecret: tempConfig.discogs?.consumerSecret || globalDiscogs.consumerSecret || undefined,
-    }
-    if (!discogsToTest.userToken && (!discogsToTest.consumerKey || !discogsToTest.consumerSecret)) {
+    const localDiscogs = tempConfig.discogs
+    const hasLocalUserToken = !!localDiscogs?.userToken
+    const hasLocalConsumerPair = !!localDiscogs?.consumerKey && !!localDiscogs?.consumerSecret
+    const hasGlobalUserToken = !!globalDiscogs.userToken
+    const hasGlobalConsumerPair = !!globalDiscogs.consumerKey && !!globalDiscogs.consumerSecret
+
+    const discogsToTest = hasLocalUserToken
+      ? { userToken: localDiscogs!.userToken }
+      : hasLocalConsumerPair
+        ? {
+            consumerKey: localDiscogs!.consumerKey,
+            consumerSecret: localDiscogs!.consumerSecret,
+          }
+        : hasGlobalUserToken
+          ? { userToken: globalDiscogs.userToken }
+          : hasGlobalConsumerPair
+            ? {
+                consumerKey: globalDiscogs.consumerKey,
+                consumerSecret: globalDiscogs.consumerSecret,
+              }
+            : null
+
+    if (!discogsToTest) {
       toast.error('Please enter Discogs credentials first')
       return
     }
