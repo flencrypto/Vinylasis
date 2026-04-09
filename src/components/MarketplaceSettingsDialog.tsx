@@ -36,8 +36,12 @@ function getGlobalDiscogsCredentials(): { userToken: string; consumerKey: string
 /** Read eBay credentials from global settings (localStorage). */
 function getGlobalEbayCredentials(): { appId: string } {
   if (typeof localStorage === 'undefined') return { appId: '' }
-  return {
-    appId: localStorage.getItem('ebay_client_id') ?? localStorage.getItem('ebay_app_id') ?? '',
+  try {
+    return {
+      appId: localStorage.getItem('ebay_client_id') || localStorage.getItem('ebay_app_id') || '',
+    }
+  } catch {
+    return { appId: '' }
   }
 }
 
@@ -65,6 +69,12 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
   const hasGlobalDiscogs =
     !!globalDiscogs.userToken || (!!globalDiscogs.consumerKey && !!globalDiscogs.consumerSecret)
   const hasGlobalEbay = !!globalEbay.appId
+
+  // A "complete" local credential set: either a personal token OR a full key+secret pair.
+  const hasLocalDiscogs = !!(
+    tempConfig.discogs?.userToken?.trim() ||
+    (tempConfig.discogs?.consumerKey?.trim() && tempConfig.discogs?.consumerSecret?.trim())
+  )
 
   const validation = validateMarketplaceConfig(tempConfig)
 
@@ -304,7 +314,7 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
               </Label>
             </div>
 
-            {hasGlobalDiscogs && !tempConfig.discogs?.userToken && !tempConfig.discogs?.consumerKey && (
+            {hasGlobalDiscogs && !hasLocalDiscogs && (
               <Alert className="bg-green-500/10 border-green-500/30">
                 <CheckCircle size={16} weight="fill" className="text-green-400" />
                 <AlertDescription className="text-sm">
@@ -340,12 +350,12 @@ export function MarketplaceSettingsDialog({ open, onOpenChange }: MarketplaceSet
                     <Input
                       id="discogs-token"
                       type="password"
-                      placeholder={hasGlobalDiscogs && !tempConfig.discogs?.userToken ? 'Using credentials from Settings' : 'Enter your Discogs personal token'}
+                      placeholder={hasGlobalDiscogs && !hasLocalDiscogs ? 'Using credentials from Settings' : 'Enter your Discogs personal token'}
                       value={tempConfig.discogs?.userToken || ''}
                       onChange={(e) => updateDiscogsConfig('userToken', e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {hasGlobalDiscogs && !tempConfig.discogs?.userToken
+                      {hasGlobalDiscogs && !hasLocalDiscogs
                         ? 'Leave blank to use the Discogs credentials from your API Settings.'
                         : 'Easiest method - get this from your Discogs account settings'}
                     </p>

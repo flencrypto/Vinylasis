@@ -149,10 +149,10 @@ export function getDefaultMarketplaceConfig(): MarketplaceConfig {
   }
 }
 
-/** Safe localStorage read that returns '' in environments without localStorage. */
+/** Safe localStorage read that returns a trimmed string or '' in environments without localStorage. */
 function safeLS(key: string): string {
   try {
-    return (typeof localStorage !== 'undefined' && localStorage.getItem(key)) || ''
+    return (typeof localStorage !== 'undefined' && localStorage.getItem(key)?.trim()) || ''
   } catch {
     return ''
   }
@@ -272,8 +272,8 @@ export function resolveMarketplaceConfig(config: MarketplaceConfig): Marketplace
  * marketplace config itself or from the global settings (localStorage).
  */
 export function isDiscogsConfigured(config?: MarketplaceConfig['discogs']): boolean {
-  if (config?.userToken) return true
-  if (config?.consumerKey && config?.consumerSecret) return true
+  if (config?.userToken?.trim()) return true
+  if (config?.consumerKey?.trim() && config?.consumerSecret?.trim()) return true
   const token = safeLS('discogs_personal_token')
   if (token) return true
   const key = safeLS('discogs_consumer_key')
@@ -286,7 +286,7 @@ export function isDiscogsConfigured(config?: MarketplaceConfig['discogs']): bool
  * marketplace config itself or from the global settings (localStorage).
  */
 export function isEbayConfigured(config?: MarketplaceConfig['ebay']): boolean {
-  if (config?.appId) return true
+  if (config?.appId?.trim()) return true
   return !!(safeLS('ebay_client_id') || safeLS('ebay_app_id'))
 }
 
