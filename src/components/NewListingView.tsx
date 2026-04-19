@@ -334,7 +334,7 @@ export default function NewListingView() {
   }
 
   const cancelCurrentAnalysis = () => {
-    analysisRunIdRef.current += 1
+    ++analysisRunIdRef.current
     setAnalysisStep('idle')
   }
 
