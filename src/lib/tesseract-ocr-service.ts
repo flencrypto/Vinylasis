@@ -375,7 +375,7 @@ class TesseractOCRService {
     if (/\d/.test(stripped)) return false
     if (!/[A-Za-z]{3}/.test(stripped)) return false
     if (/[,:;()[\]{}]/.test(stripped)) return false
-    if (/^(artist|title|album|record|made in|catalog|cat\.?|side)\b/i.test(normalized)) return false
+    if (/^(artist|title|album|record|made in|catalog|cat\.?|side)\b/i.test(stripped)) return false
 
     const words = stripped.split(/\s+/).filter(Boolean)
     if (words.length < 2 || words.length > 9) return false
