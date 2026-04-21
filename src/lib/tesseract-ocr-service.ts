@@ -373,16 +373,36 @@ class TesseractOCRService {
       .trim()
 
     if (stripped.length < 3 || stripped.length > 60) return false
-    if (/\d/.test(stripped)) return false
-    if (!/[A-Za-z]{3}/.test(stripped)) return false
     if (/[,:;()[\]{}]/.test(stripped)) return false
     if (/^(artist|title|album|record|made in|catalog|cat\.?|side)\b/i.test(stripped)) return false
 
+    const compact = stripped.replace(/\s+/g, '')
+    const digitMatches = stripped.match(/\d/g) ?? []
+    const digitCount = digitMatches.length
+    const letterMatches = stripped.match(/[A-Za-z]/g) ?? []
+    const letterCount = letterMatches.length
+    const hasDigits = digitCount > 0
+    const isNumericTitle =
+      /^\d{4}$/.test(stripped) ||
+      /^\d+'\d{2}$/.test(stripped)
+    const looksLikeCatalogCode =
+      /^[A-Z]{1,5}[-/]?\d{2,}[A-Z0-9/-]*$/i.test(compact) ||
+      /^[A-Z0-9-]{6,}$/.test(compact)
+
+    if (looksLikeCatalogCode && !isNumericTitle) return false
+
+    if (hasDigits && !isNumericTitle) {
+      const significantChars = stripped.replace(/[^A-Za-z0-9]/g, '').length
+      if (significantChars > 0 && digitCount / significantChars > 0.5) return false
+    }
+
+    if (!isNumericTitle && letterCount < 3) return false
+
     const words = stripped.split(/\s+/).filter(Boolean)
-    if (words.length < 2 || words.length > 9) return false
+    if (words.length < (isNumericTitle ? 1 : 2) || words.length > 9) return false
 
     const lettersOnly = stripped.replace(/[^A-Za-z]/g, '')
-    if (!lettersOnly) return false
+    if (!lettersOnly) return isNumericTitle
     const letterChars = lettersOnly.split('')
     const uppercaseChars = letterChars.filter((c) => c === c.toUpperCase()).length
     const uppercaseRatio = uppercaseChars / letterChars.length
