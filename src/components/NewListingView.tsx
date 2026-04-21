@@ -119,18 +119,39 @@ function hasManualData(data: ManualData | undefined): boolean {
 }
 
 function getErrorMessage(error: unknown): string | null {
-  if (error instanceof Error && error.message.trim()) return error.message.trim()
-  if (typeof error === 'string' && error.trim()) return error.trim()
+  if (error instanceof Error) {
+    const trimmed = error.message.trim()
+    if (trimmed) return trimmed
+  }
+  if (typeof error === 'string') {
+    const trimmed = error.trim()
+    if (trimmed) return trimmed
+  }
   if (
     typeof error === 'object' &&
     error !== null &&
     'message' in error &&
-    typeof (error as { message?: unknown }).message === 'string' &&
-    (error as { message: string }).message.trim()
+    typeof (error as { message?: unknown }).message === 'string'
   ) {
-    return (error as { message: string }).message.trim()
+    const trimmed = (error as { message: string }).message.trim()
+    if (trimmed) return trimmed
   }
   return null
+}
+
+function sanitizeErrorMessage(message: string): string {
+  const singleLine = message.replace(/\s+/g, ' ').trim()
+  if (!singleLine) return ''
+
+  const hasSensitiveContent =
+    /(api[\s_-]*key|token|secret|authorization|bearer)/i.test(singleLine) ||
+    /sk-[a-z0-9_-]+/i.test(singleLine)
+
+  if (hasSensitiveContent) {
+    return 'A provider configuration or authentication error occurred.'
+  }
+
+  return singleLine.length > 180 ? `${singleLine.slice(0, 177)}...` : singleLine
 }
 
 function loadListingDraft(): ListingDraft | null {
@@ -348,13 +369,15 @@ export default function NewListingView() {
     } catch (error) {
       if (isCancelled()) return
       console.error('Analysis failed:', error)
-      const errorMessage = getErrorMessage(error)
+      const toastMessage = 'AI analysis failed. Please try again or enter details manually.'
+      const rawErrorMessage = getErrorMessage(error)
+      const errorMessage = rawErrorMessage ? sanitizeErrorMessage(rawErrorMessage) : null
       if (errorMessage) {
-        toast.error('AI analysis failed. Please try again or enter details manually.', {
-          description: `Error produced: ${errorMessage}`
+        toast.error(toastMessage, {
+          description: `Error: ${errorMessage}`
         })
       } else {
-        toast.error('AI analysis failed. Please try again or enter details manually.')
+        toast.error(toastMessage)
       }
       setAnalysisStep('idle')
     } finally {
