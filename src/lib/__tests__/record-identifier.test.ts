@@ -412,6 +412,7 @@ describe('parseVinylText', () => {
     expect(result.artist).toBeNull()
     expect(result.title).toBeNull()
     expect(result.label).toBe('Atlantic')
+    expect(result.catalogueNumber).toBe('SD 16018')
   })
 
   it('sets high confidence when 4+ fields are populated', () => {
