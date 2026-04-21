@@ -179,6 +179,7 @@ export default function NewListingView() {
   // to restore it.
   const draftRestoredRef = useRef(false)
   const analysisRunIdRef = useRef(0)
+  const analysisInFlightRef = useRef(false)
 
   // Restore draft on mount
   useEffect(() => {
@@ -210,7 +211,7 @@ export default function NewListingView() {
   }, [images, analysisStep, analysisResult, conditionResult, listingContent, manualOverride, manualData])
 
   const handleAnalyze = async () => {
-    if (!['idle', 'complete'].includes(analysisStep)) {
+    if (analysisInFlightRef.current) {
       toast.info('Analysis already in progress')
       return
     }
@@ -220,6 +221,7 @@ export default function NewListingView() {
       return
     }
 
+    analysisInFlightRef.current = true
     const runId = ++analysisRunIdRef.current
     const isCancelled = () => runId !== analysisRunIdRef.current
 
@@ -333,11 +335,16 @@ export default function NewListingView() {
       console.error('Analysis failed:', error)
       toast.error('Analysis failed. Please try again or enter details manually.')
       setAnalysisStep('idle')
+    } finally {
+      if (runId === analysisRunIdRef.current) {
+        analysisInFlightRef.current = false
+      }
     }
   }
 
   const cancelCurrentAnalysis = () => {
     ++analysisRunIdRef.current
+    analysisInFlightRef.current = false
     setAnalysisStep('idle')
   }
 
@@ -555,16 +562,14 @@ export default function NewListingView() {
                 >
                   Cancel & Reset Images
                 </Button>
-                {analysisStep !== 'analyzing_images' && (
-                  <Button
-                    variant="outline"
-                    onClick={handleCancelReleaseAnalysis}
-                    size="sm"
-                    className="border-slate-600/80 bg-slate-900/70 hover:bg-slate-800/80"
-                  >
-                    Cancel Release Analysis
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={handleCancelReleaseAnalysis}
+                  size="sm"
+                  className="border-slate-600/80 bg-slate-900/70 hover:bg-slate-800/80"
+                >
+                  Cancel Release Analysis
+                </Button>
               </div>
             </Card>
           )}
