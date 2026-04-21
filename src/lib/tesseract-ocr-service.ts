@@ -318,7 +318,30 @@ class TesseractOCRService {
 
     if (result.artist && result.title) return
 
-    const substantial = lines.filter(
+    const tracklistLines = lines.filter((line) => this._isLikelyTracklistLine(line))
+    const filteredLines = lines.filter((line) => !this._isLikelyTracklistLine(line))
+    const tracklistRatio = lines.length > 0 ? tracklistLines.length / lines.length : 0
+
+    let contiguousTracklistBlock = 0
+    let maxContiguousTracklistBlock = 0
+    for (const line of lines) {
+      if (this._isLikelyTracklistLine(line)) {
+        contiguousTracklistBlock += 1
+        maxContiguousTracklistBlock = Math.max(
+          maxContiguousTracklistBlock,
+          contiguousTracklistBlock
+        )
+      } else {
+        contiguousTracklistBlock = 0
+      }
+    }
+
+    const hasDominantTracklist =
+      tracklistLines.length >= 6 &&
+      (tracklistRatio >= 0.6 ||
+        (tracklistRatio >= 0.5 && maxContiguousTracklistBlock >= 6))
+
+    const substantial = filteredLines.filter(
       (l) =>
         l.length >= 3 &&
         l.length <= 80 &&
@@ -327,12 +350,64 @@ class TesseractOCRService {
         !/^(side|track|stereo|mono|℗|©|\(c\))/i.test(l)
     )
 
+    if (hasDominantTracklist) return
+
     if (!result.artist && substantial.length >= 1) {
       result.artist = substantial[0]
     }
     if (!result.title && substantial.length >= 2) {
       result.title = substantial[1]
     }
+  }
+
+  private _isLikelyTracklistLine(line: string): boolean {
+    const normalized = line.trim()
+    if (!normalized) return false
+    if (normalized === '---IMAGE BREAK---') return false
+    if (normalized.length < 4 || normalized.length > 80) return false
+
+    const stripped = normalized
+      .replace(/^(?:side\s*[AB12]\s*[-:.]?\s*)/i, '')
+      .replace(/^(?:track\s*\d+\s*[-:.]?\s*)/i, '')
+      .replace(/^\d{1,2}[\).:-]?\s*/, '')
+      .trim()
+
+    if (stripped.length < 3 || stripped.length > 60) return false
+    if (/[,:;()[\]{}]/.test(stripped)) return false
+    if (/^(artist|title|album|record|made in|catalog|cat\.?|side)\b/i.test(stripped)) return false
+
+    const compact = stripped.replace(/\s+/g, '')
+    const digitMatches = stripped.match(/\d/g) ?? []
+    const digitCount = digitMatches.length
+    const letterMatches = stripped.match(/[A-Za-z]/g) ?? []
+    const letterCount = letterMatches.length
+    const hasDigits = digitCount > 0
+    const isNumericTitle =
+      /^\d{4}$/.test(stripped) ||
+      /^\d+'\d{2}$/.test(stripped)
+    const looksLikeCatalogCode =
+      /^[A-Z]{1,5}[-/]?\d{2,}[A-Z0-9/-]*$/i.test(compact) ||
+      /^[A-Z0-9-]{6,}$/.test(compact)
+
+    if (looksLikeCatalogCode && !isNumericTitle) return false
+
+    if (hasDigits && !isNumericTitle) {
+      const significantChars = stripped.replace(/[^A-Za-z0-9]/g, '').length
+      if (significantChars > 0 && digitCount / significantChars > 0.5) return false
+    }
+
+    if (!isNumericTitle && letterCount < 3) return false
+
+    const words = stripped.split(/\s+/).filter(Boolean)
+    if (words.length < (isNumericTitle ? 1 : 2) || words.length > 9) return false
+
+    const lettersOnly = stripped.replace(/[^A-Za-z]/g, '')
+    if (!lettersOnly) return isNumericTitle
+    const letterChars = lettersOnly.split('')
+    const uppercaseChars = letterChars.filter((c) => c === c.toUpperCase()).length
+    const uppercaseRatio = uppercaseChars / letterChars.length
+
+    return uppercaseRatio >= 0.9
   }
 }
 
