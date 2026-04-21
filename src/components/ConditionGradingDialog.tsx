@@ -54,6 +54,14 @@ export function ConditionGradingDialog({
     }
   }, [open, existingImages])
 
+  useEffect(() => {
+    if (!open) {
+      setImages([])
+      setIsAnalyzing(false)
+      setProgress(0)
+      setResult(null)
+    }
+  }, [open])
   const handleAnalyze = async () => {
     if (images.length === 0) {
       toast.error('Please upload at least one image')
