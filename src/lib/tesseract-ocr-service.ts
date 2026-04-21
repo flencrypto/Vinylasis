@@ -319,8 +319,27 @@ class TesseractOCRService {
     if (result.artist && result.title) return
 
     const tracklistLines = lines.filter((line) => this._isLikelyTracklistLine(line))
-    const hasDenseTracklist = tracklistLines.length >= 6
     const filteredLines = lines.filter((line) => !this._isLikelyTracklistLine(line))
+    const tracklistRatio = lines.length > 0 ? tracklistLines.length / lines.length : 0
+
+    let contiguousTracklistBlock = 0
+    let maxContiguousTracklistBlock = 0
+    for (const line of lines) {
+      if (this._isLikelyTracklistLine(line)) {
+        contiguousTracklistBlock += 1
+        maxContiguousTracklistBlock = Math.max(
+          maxContiguousTracklistBlock,
+          contiguousTracklistBlock
+        )
+      } else {
+        contiguousTracklistBlock = 0
+      }
+    }
+
+    const hasDominantTracklist =
+      tracklistLines.length >= 6 &&
+      (tracklistRatio >= 0.6 ||
+        (tracklistRatio >= 0.5 && maxContiguousTracklistBlock >= 6))
 
     const substantial = filteredLines.filter(
       (l) =>
@@ -331,21 +350,7 @@ class TesseractOCRService {
         !/^(side|track|stereo|mono|℗|©|\(c\))/i.test(l)
     )
 
-    if (!result.title && !result.artist) {
-      if (hasDenseTracklist) {
-        const heading = lines.length > 0 ? lines[0].trim() : ''
-        if (
-          heading &&
-          heading.length >= 4 &&
-          heading.length <= 80 &&
-          !this._isLikelyTracklistLine(heading)
-        ) {
-          result.title = heading
-        }
-      }
-    }
-
-    if (hasDenseTracklist) return
+    if (hasDominantTracklist) return
 
     if (!result.artist && substantial.length >= 1) {
       result.artist = substantial[0]
