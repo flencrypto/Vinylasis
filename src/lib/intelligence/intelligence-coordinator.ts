@@ -753,13 +753,7 @@ Rules:
 - Ensure estimateLow <= estimateMid <= estimateHigh
 - If market data is sparse, lower confidence`
 
-    const payload = {
-      pressing,
-      sold: sold.data,
-      soldSuccess: sold.success,
-      discogsMarket: discogsMarket.data,
-      discogsSuccess: discogsMarket.success,
-    }
+    const payload = this._buildGrokValuationPayload(pressing, sold, discogsMarket)
 
     try {
       const response = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -792,7 +786,12 @@ Rules:
       const content = data?.choices?.[0]?.message?.content
       if (typeof content !== 'string' || !content.trim()) return null
 
-      const parsed = JSON.parse(this._extractJsonObject(content)) as Record<string, unknown>
+      let parsed: Record<string, unknown>
+      try {
+        parsed = JSON.parse(this._extractJsonObject(content)) as Record<string, unknown>
+      } catch {
+        return null
+      }
 
       const estimateLow = Number(parsed.estimateLow)
       const estimateMid = Number(parsed.estimateMid)
@@ -883,12 +882,50 @@ Rules:
   }
 
   private _normalizeConfidence(value: unknown): number {
-    const PERCENT_SCALE = 100
+    const PERCENTAGE_TO_DECIMAL_DIVISOR = 100
     const numeric = Number(value)
     if (!Number.isFinite(numeric)) return 0.5
     // Grok may return confidence as either a decimal (0-1) or a percentage (0-100).
-    const normalized = numeric > 1 ? numeric / PERCENT_SCALE : numeric
+    const normalized = numeric > 1 ? numeric / PERCENTAGE_TO_DECIMAL_DIVISOR : numeric
     return Math.round(Math.max(0, Math.min(1, normalized)) * 100) / 100
+  }
+
+  private _buildGrokValuationPayload(
+    pressing: PressingResult['data'],
+    sold: SoldPricesResult,
+    discogsMarket: DiscogsMarketResult
+  ): Record<string, unknown> {
+    return {
+      pressing: {
+        matchScore: pressing.matchScore,
+        artistName: pressing.artistName ?? null,
+        releaseTitle: pressing.releaseTitle ?? null,
+        catalogNumber: pressing.catalogNumber ?? null,
+        year: pressing.year ?? null,
+        country: pressing.country ?? null,
+        matrix: (pressing.matrix ?? []).slice(0, 8),
+      },
+      soldSuccess: sold.success,
+      sold: {
+        averagePrice: sold.data.averagePrice,
+        medianPrice: sold.data.medianPrice,
+        trend30d: sold.data.trend30d,
+        trend60d: sold.data.trend60d,
+        currency: sold.data.currency,
+        listingsCount: sold.data.listings.length,
+      },
+      discogsSuccess: discogsMarket.success,
+      discogsMarket: {
+        lowestPrice: discogsMarket.data.lowestPrice,
+        medianPrice: discogsMarket.data.medianPrice,
+        numForSale: discogsMarket.data.numForSale,
+        want: discogsMarket.data.want,
+        have: discogsMarket.data.have,
+        demandTrend: discogsMarket.data.demandTrend,
+        demandScore: discogsMarket.data.demandScore,
+        currency: discogsMarket.data.currency,
+      },
+    }
   }
 
   private _normalizeMatrix(raw: string): string[] {
