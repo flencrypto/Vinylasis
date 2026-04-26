@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { useConfidenceThresholds } from '@/hooks/use-confidence-thresholds'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -25,14 +25,16 @@ interface PressingIdentificationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSelect?: (pressing: ScoredPressingCandidate, images: ItemImage[]) => void
+  existingImages?: ItemImage[]
 }
 
 export function PressingIdentificationDialog({
   open,
   onOpenChange,
   onSelect,
+  existingImages,
 }: PressingIdentificationDialogProps) {
-  const [images, setImages] = useState<ItemImage[]>([])
+  const [images, setImages] = useState<ItemImage[]>(existingImages ?? [])
   const [manualHints, setManualHints] = useState({
     artist: '',
     title: '',
@@ -52,6 +54,49 @@ export function PressingIdentificationDialog({
   const [discogsEnabled, setDiscogsEnabled] = useState(true)
   const [apiKeys] = useKV<{ discogsUserToken?: string }>('vinyl-vault-api-keys', {})
   const { getThreshold, shouldAutoMatch } = useConfidenceThresholds()
+  // Monotonically-increasing id for each analyze run. Incremented when a new
+  // analysis starts and when the dialog closes, so stale async results from a
+  // previous run (or a run that was still in-flight when the dialog closed)
+  // are ignored rather than repopulating state.
+  const analysisRunIdRef = useRef(0)
+
+  // Reset transient dialog state whenever it closes so a subsequent open
+  // reliably reseeds from `existingImages` and doesn't show stale candidates
+  // or images. This covers closes via the Dialog "X", overlay click, and Esc,
+  // which bypass the explicit reset buttons.
+  useEffect(() => {
+    if (!open) {
+      // Invalidate any in-flight analyze run so its post-await setState calls
+      // are dropped instead of repopulating state while the dialog is closed.
+      analysisRunIdRef.current += 1
+      setImages([])
+      setManualHints({
+        artist: '',
+        title: '',
+        catalogNumber: '',
+        country: '',
+        year: '',
+        format: '',
+        labelName: '',
+      })
+      setOcrRunoutValues('')
+      setIsAnalyzing(false)
+      setAnalysisProgress(0)
+      setCandidates([])
+      setShowReveal(false)
+      setSelectedCandidate(null)
+      setAutoMatchedCandidate(null)
+    }
+  }, [open])
+
+  // When the dialog is (re)opened, seed its image state with any images the
+  // caller has already collected so the user doesn't have to re-upload them
+  // after running image analysis or other AI flows.
+  useEffect(() => {
+    if (open && existingImages && existingImages.length > 0) {
+      setImages(prev => (prev.length === 0 ? existingImages : prev))
+    }
+  }, [open, existingImages])
 
   useEffect(() => {
     if (candidates.length > 0) {
@@ -80,6 +125,11 @@ export function PressingIdentificationDialog({
     setCandidates([])
     setSelectedCandidate(null)
 
+    // Capture this run's id; any state updates below must verify the id hasn't
+    // been bumped by a close or a subsequent analyze before applying.
+    const runId = ++analysisRunIdRef.current
+    const isCurrentRun = () => analysisRunIdRef.current === runId
+
     try {
       const imageAnalysis: ImageAnalysisResult[] = []
       
@@ -89,6 +139,7 @@ export function PressingIdentificationDialog({
         
         for (const [index, image] of images.entries()) {
           const analysis = await analyzeVinylImage(image.dataUrl, image.type)
+          if (!isCurrentRun()) return
           imageAnalysis.push(analysis)
           setAnalysisProgress(20 + (index + 1) / images.length * 30)
         }
@@ -127,6 +178,7 @@ export function PressingIdentificationDialog({
         discogsSearchEnabled: discogsEnabled,
         discogsApiToken: apiKeys?.discogsUserToken,
       })
+      if (!isCurrentRun()) return
 
       setAnalysisProgress(100)
       setCandidates(results)
@@ -144,12 +196,16 @@ export function PressingIdentificationDialog({
       }
     } catch (error) {
       console.error('Identification failed:', error)
-      toast.error('Pressing identification failed', {
-        description: 'Please try again or contact support'
-      })
+      if (isCurrentRun()) {
+        toast.error('Pressing identification failed', {
+          description: 'Please try again or contact support'
+        })
+      }
     } finally {
-      setIsAnalyzing(false)
-      setAnalysisProgress(0)
+      if (isCurrentRun()) {
+        setIsAnalyzing(false)
+        setAnalysisProgress(0)
+      }
     }
   }
 

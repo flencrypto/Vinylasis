@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -44,7 +44,31 @@ export function ConditionGradingDialog({
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState<ConditionResult | null>(null)
   const { checkConfidence, getThreshold, getConfidenceBand } = useConfidenceThresholds()
+  // Monotonically-increasing id for each analyze run. Incremented when a new
+  // analysis starts and when the dialog closes, so stale async results are
+  // ignored rather than repopulating state while the dialog is closed.
+  const analysisRunIdRef = useRef(0)
 
+  // When the dialog is (re)opened, seed its image state with any images the
+  // caller has already uploaded so the user doesn't have to re-upload them
+  // after other AI flows (e.g. image analysis, pressing identification).
+  useEffect(() => {
+    if (open && existingImages.length > 0) {
+      setImages(prev => (prev.length === 0 ? existingImages : prev))
+    }
+  }, [open, existingImages])
+
+  useEffect(() => {
+    if (!open) {
+      // Invalidate any in-flight analyze run so its post-await setState calls
+      // are dropped instead of repopulating state while the dialog is closed.
+      analysisRunIdRef.current += 1
+      setImages([])
+      setIsAnalyzing(false)
+      setProgress(0)
+      setResult(null)
+    }
+  }, [open])
   const handleAnalyze = async () => {
     if (images.length === 0) {
       toast.error('Please upload at least one image')
@@ -55,12 +79,18 @@ export function ConditionGradingDialog({
     setProgress(0)
     setResult(null)
 
+    // Capture this run's id; guard any post-await state updates against a
+    // close or a subsequent analyze invalidating it.
+    const runId = ++analysisRunIdRef.current
+    const isCurrentRun = () => analysisRunIdRef.current === runId
+
     try {
       setProgress(20)
       toast.info('Analyzing images for condition grading...')
 
       const analysisResult = await analyzeConditionFromImages(images)
-      
+      if (!isCurrentRun()) return
+
       setProgress(100)
       setResult(analysisResult)
 
@@ -79,9 +109,13 @@ export function ConditionGradingDialog({
       }
     } catch (error) {
       console.error('Condition analysis failed:', error)
-      toast.error('Analysis failed. Please try again.')
+      if (isCurrentRun()) {
+        toast.error('Analysis failed. Please try again.')
+      }
     } finally {
-      setIsAnalyzing(false)
+      if (isCurrentRun()) {
+        setIsAnalyzing(false)
+      }
     }
   }
 
