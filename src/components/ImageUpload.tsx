@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -32,24 +32,25 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
 
   // Keep a ref to the latest images so async callbacks (auto-detect, imgBB upload)
   // never operate on a stale closure and accidentally drop newly-added images
-  // or a sibling's just-applied imgBB metadata.
+  // or a sibling's just-applied imgBB metadata. Sync during render so a
+  // parent-driven `images` update is visible to event handlers immediately —
+  // a useEffect-only sync would leave a post-commit gap where handlers could
+  // still read the previous value and write back stale state.
   const imagesRef = useRef(images)
-  useEffect(() => {
-    imagesRef.current = images
-  }, [images])
+  imagesRef.current = images
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    if (images.length >= maxImages) {
+    if (imagesRef.current.length >= maxImages) {
       toast.error(`Maximum ${maxImages} images allowed`)
       return
     }
 
     const newImages: ItemImage[] = []
 
-    for (let i = 0; i < files.length && images.length + newImages.length < maxImages; i++) {
+    for (let i = 0; i < files.length && imagesRef.current.length + newImages.length < maxImages; i++) {
       const file = files[i]
       
       if (!file.type.startsWith('image/')) continue
@@ -67,9 +68,10 @@ export function ImageUpload({ images, onImagesChange, maxImages = 10, autoUpload
       newImages.push(newImage)
     }
 
-    const updatedImages = [...images, ...newImages]
-    // Sync the ref synchronously so async callbacks below (auto-detect /
-    // imgBB upload) see the new images even if React hasn't re-rendered yet.
+    // Read from imagesRef.current rather than the prop snapshot — `fileToDataUrl`
+    // is awaited above, so any in-flight async update (imgBB upload / type
+    // detection) may have already written newer state we must not clobber.
+    const updatedImages = [...imagesRef.current, ...newImages]
     imagesRef.current = updatedImages
     onImagesChange(updatedImages)
 
